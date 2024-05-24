@@ -8,6 +8,13 @@
   </head>
   <body>
     <div id="root"></div>
+	<script>
+		// fix for "global is not defined"
+		// https://github.com/matrix-org/matrix-js-sdk/issues/2168#issuecomment-1121668283
+		if (global === undefined) {
+			var global = window;
+		}
+	</script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
