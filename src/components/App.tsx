@@ -5,7 +5,7 @@ import { ClientEvent, MatrixClient, MatrixError } from 'matrix-js-sdk';
 import Login from './Login';
 import Main from './Main';
 
-import { User } from '../types';
+import { AppStatus, User } from '../types';
 
 
 function initClient(baseUrl: string) {
@@ -13,17 +13,19 @@ function initClient(baseUrl: string) {
 }
 
 
-type Status = 'logged-out' | 'logged-in' | 'initial-sync' | 'ready';
-
-
 function App() {
 	const [client, setClient] = useState<MatrixClient | null>(null);
 	const [user, setUser] = useState<User | null>(null);
 	const [loginErrors, setLoginErrors] = useState<string[]>([]);
-	const [status, setStatus] = useState<Status>('logged-out');
+	const [status, setStatus] = useState<AppStatus>('logged-out');
 
 	useEffect(
-		() => { console.log('status: ' + status); },
+		() => {
+			console.log('status: ' + status);
+			if (status === 'logged-out') {
+				setUser(null);
+			}
+		},
 		[status]
 	);
 
@@ -74,6 +76,11 @@ function App() {
 		}
 	};
 
+	const onLogOut = () => {
+		client!.logout(true);
+		setStatus('logged-out');
+	};
+
 	let content: ReactNode = null;
 	if (!client) {
 		// content = 'Initializing ...';
@@ -91,7 +98,10 @@ function App() {
 				console.error('Invalid state');
 				return;
 			}
-			content = <Main user={user} />;
+			content = <Fragment>
+				<Main user={user} />
+				<button onClick={onLogOut}>Logout</button>
+			</Fragment>;
 		}
 	}
 
