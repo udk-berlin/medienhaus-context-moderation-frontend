@@ -1,10 +1,11 @@
 import { Fragment, ReactNode, useEffect, useState } from 'react';
 import * as sdk from 'matrix-js-sdk';
-import { ClientEvent, MatrixClient, MatrixError } from 'matrix-js-sdk';
+import { ClientEvent, MatrixClient, MatrixError, Room } from 'matrix-js-sdk';
 
 import Login from './Login';
 import Main from './Main';
 
+import { determineUserRooms } from '../utils/matrix';
 import { AppStatus, User } from '../types';
 
 
@@ -18,10 +19,10 @@ function App() {
 	const [user, setUser] = useState<User | null>(null);
 	const [loginErrors, setLoginErrors] = useState<string[]>([]);
 	const [status, setStatus] = useState<AppStatus>('logged-out');
+	const [moderatorRooms, setModeratorRooms] = useState<Room[]>([]);
 
 	useEffect(
 		() => {
-			console.log('status: ' + status);
 			if (status === 'logged-out') {
 				setUser(null);
 			}
@@ -30,11 +31,9 @@ function App() {
 	);
 
 	useEffect(
-		() => {
-			setClient(
-				initClient(import.meta.env.VITE_MATRIX_SERVER_URL)
-			);
-		},
+		() => setClient(
+			initClient(import.meta.env.VITE_MATRIX_SERVER_URL)
+		),
 		[]
 	);
 
@@ -60,11 +59,22 @@ function App() {
 						displayName: displayname
 					});
 
+					// get public rooms
+					const roomDirectory = (
+						await client.publicRooms({ limit: 99999 })
+					).chunk;
+					const listedRoomsIds = roomDirectory.map((it) => it.room_id);
+
+					const rooms = client.getRooms();
+					const moderatorRooms = await determineUserRooms(rooms, listedRoomsIds, user_id);
+					setModeratorRooms(moderatorRooms);
+
 					setStatus('ready');
 				} else {
 					console.error('Sync failed!');
 				}
 			});
+
 			setStatus('initial-sync');
 			client.startClient();
 		} catch (err) {
@@ -99,14 +109,17 @@ function App() {
 				return;
 			}
 			content = <Fragment>
-				<Main user={user} />
 				<button onClick={onLogOut}>Logout</button>
+				<Main
+					user={user}
+					moderatorRooms={moderatorRooms}
+				/>
 			</Fragment>;
 		}
 	}
 
 	return <Fragment>
-		<h1>email notification system</h1>
+		<h1>Moderator quick actions</h1>
 		<main>{content}</main>
 	</Fragment>;
 }
