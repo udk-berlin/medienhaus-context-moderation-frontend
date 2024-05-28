@@ -1,5 +1,4 @@
-import { Fragment, ReactNode, useEffect, useState } from 'react';
-import * as sdk from 'matrix-js-sdk';
+import { Fragment, ReactNode, useState } from 'react';
 import { ClientEvent, MatrixClient, MatrixError, Room } from 'matrix-js-sdk';
 
 import Login from './Login';
@@ -9,40 +8,19 @@ import { determineUserRooms, getKnockEvents } from '../utils/matrix';
 import { AppStatus, KnockRequest, User } from '../types';
 
 
-function initClient(baseUrl: string) {
-	return sdk.createClient({ baseUrl });
+interface AppProps {
+	client: MatrixClient
 }
 
 
-function App() {
-	const [client, setClient] = useState<MatrixClient | null>(null);
+function App({ client }: AppProps) {
 	const [user, setUser] = useState<User | null>(null);
 	const [loginErrors, setLoginErrors] = useState<string[]>([]);
 	const [status, setStatus] = useState<AppStatus>('logged-out');
 	const [moderatorRooms, setModeratorRooms] = useState<Room[]>([]);
 	const [knocksByRoom, setKnocksByRoom] = useState<Record<string, KnockRequest[]>>({});
 
-	useEffect(
-		() => {
-			if (status === 'logged-out') {
-				setUser(null);
-			}
-		},
-		[status]
-	);
-
-	useEffect(
-		() => setClient(
-			initClient(import.meta.env.VITE_MATRIX_SERVER_URL)
-		),
-		[]
-	);
-
 	const updateEventsData = async (moderatorRooms: Room[]) => {
-		if (!client) {
-			console.error('Client not ready yet.');
-			return;
-		}
 		const knocksByRoom: Record<string, KnockRequest[]> = {};
 		for (const room of moderatorRooms) {
 			knocksByRoom[room.roomId] = await getKnockEvents(client, room.roomId);
@@ -51,12 +29,12 @@ function App() {
 	};
 
 	const acceptKnock = async (knock: KnockRequest) => {
-		await client!.invite(knock.roomId, knock.userId);
+		await client.invite(knock.roomId, knock.userId);
 		updateEventsData(moderatorRooms);
 	};
 
 	const rejectKnock = async (knock: KnockRequest) => {
-		await client!.kick(knock.roomId, knock.userId, /* 'Knock request denied.' */);
+		await client.kick(knock.roomId, knock.userId, /* 'Knock request denied.' */);
 		updateEventsData(moderatorRooms);
 	};
 
@@ -92,7 +70,6 @@ function App() {
 					// get rooms the user is a moderator of
 					const rooms = client.getRooms();
 					const moderatorRooms = await determineUserRooms(rooms, listedRoomsIds, user_id);
-					console.log(moderatorRooms);
 					setModeratorRooms(moderatorRooms);
 					if (!moderatorRooms.length) {
 						setStatus('not-a-moderator');
@@ -116,41 +93,38 @@ function App() {
 		}
 	};
 
-	const onLogOut = () => {
-		client!.logout(true);
+	const logout = () => {
+		client.logout(true);
 		setStatus('logged-out');
+		setUser(null);
 	};
 
 	let content: ReactNode = null;
-	if (!client) {
-		// content = null;
-	} else {
-		if (status === 'logged-out') {
-			content = <Login
-				onSubmit={onLoginSubmit}
-				errors={loginErrors}
-			/>;
-		} else if (status === 'initial-sync') {
-			content = 'Syncing...'; // TODO: show spinner
-		} else if (status === 'not-a-moderator') {
-			content = 'You do not moderate any spaces or rooms.';
-		} else if (status === 'ready') {
-			console.assert(user != null);
-			if (user === null) {
-				console.error('Invalid state');
-				return;
-			}
-			content = <Fragment>
-				<button onClick={onLogOut}>Logout</button>
-				<Main
-					user={user}
-					moderatorRooms={moderatorRooms}
-					knocksByRoom={knocksByRoom}
-					acceptKnock={acceptKnock}
-					rejectKnock={rejectKnock}
-				/>
-			</Fragment>;
+	if (status === 'logged-out') {
+		content = <Login
+			onSubmit={onLoginSubmit}
+			errors={loginErrors}
+		/>;
+	} else if (status === 'initial-sync') {
+		content = 'Syncing...'; // TODO: show spinner
+	} else if (status === 'not-a-moderator') {
+		content = 'You do not moderate any spaces or rooms.';
+	} else if (status === 'ready') {
+		console.assert(user != null);
+		if (user === null) {
+			console.error('Invalid state');
+			return;
 		}
+		content = <Fragment>
+			<button onClick={logout}>Logout</button>
+			<Main
+				user={user}
+				moderatorRooms={moderatorRooms}
+				knocksByRoom={knocksByRoom}
+				acceptKnock={acceptKnock}
+				rejectKnock={rejectKnock}
+			/>
+		</Fragment>;
 	}
 
 	return <Fragment>
