@@ -5,8 +5,8 @@ import { ClientEvent, MatrixClient, MatrixError, Room } from 'matrix-js-sdk';
 import Login from './Login';
 import Main from './Main';
 
-import { determineUserRooms } from '../utils/matrix';
-import { AppStatus, User } from '../types';
+import { determineUserRooms, getKnockEvents } from '../utils/matrix';
+import { AppStatus, KnockRequest, User } from '../types';
 
 
 function initClient(baseUrl: string) {
@@ -20,6 +20,7 @@ function App() {
 	const [loginErrors, setLoginErrors] = useState<string[]>([]);
 	const [status, setStatus] = useState<AppStatus>('logged-out');
 	const [moderatorRooms, setModeratorRooms] = useState<Room[]>([]);
+	const [knocksByRoom, setKnocksByRoom] = useState<Record<string, KnockRequest[]>>({});
 
 	useEffect(
 		() => {
@@ -49,10 +50,11 @@ function App() {
 			client.setAccessToken(access_token);
 			setStatus('logged-in');
 
-			client.once(ClientEvent.Sync, async (state: string/* , prevState, res */) => {
+			client.once(ClientEvent.Sync, async (state: string) => {
 				if (state === 'PREPARED') {
 					console.log('Sync complete');
 
+					// set user info
 					const { displayname } = await client.getProfileInfo(user_id);
 					setUser({
 						userId: user_id,
@@ -65,11 +67,21 @@ function App() {
 					).chunk;
 					const listedRoomsIds = roomDirectory.map((it) => it.room_id);
 
+					// get rooms the user is a moderator of
 					const rooms = client.getRooms();
 					const moderatorRooms = await determineUserRooms(rooms, listedRoomsIds, user_id);
 					setModeratorRooms(moderatorRooms);
+					if (!moderatorRooms.length) {
+						setStatus('not-a-moderator');
+					} else {
+						const knocksByRoom: Record<string, KnockRequest[]> = {};
+						for (const room of moderatorRooms) {
+							knocksByRoom[room.roomId] = await getKnockEvents(client, room.roomId);
+						}
 
-					setStatus('ready');
+						setKnocksByRoom(knocksByRoom);
+						setStatus('ready');
+					}
 				} else {
 					console.error('Sync failed!');
 				}
@@ -93,7 +105,7 @@ function App() {
 
 	let content: ReactNode = null;
 	if (!client) {
-		// content = 'Initializing ...';
+		// content = null;
 	} else {
 		if (status === 'logged-out') {
 			content = <Login
@@ -102,6 +114,8 @@ function App() {
 			/>;
 		} else if (status === 'initial-sync') {
 			content = 'Syncing...'; // TODO: show spinner
+		} else if (status === 'not-a-moderator') {
+			content = 'You do not moderate any spaces or rooms.';
 		} else if (status === 'ready') {
 			console.assert(user != null);
 			if (user === null) {
@@ -113,6 +127,7 @@ function App() {
 				<Main
 					user={user}
 					moderatorRooms={moderatorRooms}
+					knocksByRoom={knocksByRoom}
 				/>
 			</Fragment>;
 		}

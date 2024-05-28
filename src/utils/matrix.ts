@@ -1,4 +1,6 @@
-import { EventTimeline, Room } from 'matrix-js-sdk';
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+import { EventTimeline, MatrixClient, Room } from 'matrix-js-sdk';
+import { KnockRequest } from '../types';
 
 
 export async function determineUserRooms(
@@ -10,6 +12,7 @@ export async function determineUserRooms(
 
 	rooms.forEach((room) => {
 		// only handle listed rooms
+		// TODO: keep this?
 		if (!listedRoomsIds.includes(room.roomId)) {
 			// ignore
 			return;
@@ -42,4 +45,29 @@ export async function determineUserRooms(
 	});
 
 	return moderatorRooms;
+}
+
+
+export async function getKnockEvents(
+	client: MatrixClient,
+	roomId: string,
+) {
+	const stateEvents = await client.roomState(roomId);
+	const knockRequests: KnockRequest[] = stateEvents
+		.filter((event) =>
+			event.type === 'm.room.member' &&
+			event.content.membership === 'knock'
+		)
+		.map((event) => {
+			const time = new Date(event.origin_server_ts);
+			return {
+				// @ts-expect-error
+				userId: event.user_id, // alternatively `sender` or `state_key`
+				userDisplayName: event.content.displayname,
+				reason: event.content.reason as (string | undefined),
+				time
+			};
+		});
+
+	return knockRequests;
 }
