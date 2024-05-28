@@ -6,10 +6,18 @@ interface MainProps {
 	user: User
 	moderatorRooms: Room[],
 	knocksByRoom: Record<string, KnockRequest[]>,
+	acceptKnock: (knock: KnockRequest) => Promise<void>,
+	rejectKnock: (knock: KnockRequest) => Promise<void>,
 }
 
 
-function Main({ user, moderatorRooms, knocksByRoom }: MainProps) {
+function Main({
+	user,
+	moderatorRooms,
+	knocksByRoom,
+	acceptKnock,
+	rejectKnock
+}: MainProps) {
 	return <div>
 		<div>user: {user.displayName}</div>
 		<div>id: {user.userId}</div>
@@ -23,7 +31,9 @@ function Main({ user, moderatorRooms, knocksByRoom }: MainProps) {
 					{knocks.map((knock) => {
 						return <li key={knock.userId}>
 							<strong>{knock.userDisplayName}</strong>
-							<span> knocked</span>
+							<span> knocked </span>
+							<button onClick={() => acceptKnock(knock)}>accept</button>
+							<button onClick={() => rejectKnock(knock)}>reject</button>
 							<ul>
 								<li>Id: {knock.userId}</li>
 								<li>Time: {knock.time.toISOString()}</li>

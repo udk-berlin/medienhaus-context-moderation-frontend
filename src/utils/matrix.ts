@@ -60,13 +60,15 @@ export async function getKnockEvents(
 		)
 		.map((event) => {
 			const time = new Date(event.origin_server_ts);
-			return {
+			const knock: KnockRequest = {
+				roomId: event.room_id,
 				// @ts-expect-error
 				userId: event.user_id, // alternatively `sender` or `state_key`
 				userDisplayName: event.content.displayname,
 				reason: event.content.reason as (string | undefined),
 				time
 			};
+			return knock;
 		});
 
 	return knockRequests;

@@ -6,6 +6,7 @@ export type User = {
 };
 
 export type KnockRequest = {
+	roomId: string;
 	userId: string;
 	userDisplayName?: string;
 	reason?: string;

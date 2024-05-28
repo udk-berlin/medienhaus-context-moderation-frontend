@@ -38,6 +38,28 @@ function App() {
 		[]
 	);
 
+	const updateEventsData = async (moderatorRooms: Room[]) => {
+		if (!client) {
+			console.error('Client not ready yet.');
+			return;
+		}
+		const knocksByRoom: Record<string, KnockRequest[]> = {};
+		for (const room of moderatorRooms) {
+			knocksByRoom[room.roomId] = await getKnockEvents(client, room.roomId);
+		}
+		setKnocksByRoom(knocksByRoom);
+	};
+
+	const acceptKnock = async (knock: KnockRequest) => {
+		await client!.invite(knock.roomId, knock.userId);
+		updateEventsData(moderatorRooms);
+	};
+
+	const rejectKnock = async (knock: KnockRequest) => {
+		await client!.kick(knock.roomId, knock.userId, /* 'Knock request denied.' */);
+		updateEventsData(moderatorRooms);
+	};
+
 	const onLoginSubmit = async (user: string, password: string) => {
 		console.assert(client != null);
 		if (client == null) { return; }
@@ -70,16 +92,12 @@ function App() {
 					// get rooms the user is a moderator of
 					const rooms = client.getRooms();
 					const moderatorRooms = await determineUserRooms(rooms, listedRoomsIds, user_id);
+					console.log(moderatorRooms);
 					setModeratorRooms(moderatorRooms);
 					if (!moderatorRooms.length) {
 						setStatus('not-a-moderator');
 					} else {
-						const knocksByRoom: Record<string, KnockRequest[]> = {};
-						for (const room of moderatorRooms) {
-							knocksByRoom[room.roomId] = await getKnockEvents(client, room.roomId);
-						}
-
-						setKnocksByRoom(knocksByRoom);
+						updateEventsData(moderatorRooms);
 						setStatus('ready');
 					}
 				} else {
@@ -128,6 +146,8 @@ function App() {
 					user={user}
 					moderatorRooms={moderatorRooms}
 					knocksByRoom={knocksByRoom}
+					acceptKnock={acceptKnock}
+					rejectKnock={rejectKnock}
 				/>
 			</Fragment>;
 		}
