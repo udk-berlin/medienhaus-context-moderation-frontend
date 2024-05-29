@@ -1,10 +1,10 @@
-import { KnockRequest } from '../types';
+import { KnockEvent } from '../types';
 import { formatDate } from '../utils/date';
 
 interface KnockEventItemProps {
-	data: KnockRequest,
-	acceptKnock: (knock: KnockRequest) => Promise<void>,
-	rejectKnock: (knock: KnockRequest) => Promise<void>,
+	data: KnockEvent,
+	acceptKnock: (knock: KnockEvent) => Promise<void>,
+	rejectKnock: (knock: KnockEvent) => Promise<void>,
 }
 
 const KnockEventItem = ({ data, acceptKnock, rejectKnock, }: KnockEventItemProps) => {

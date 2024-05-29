@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { EventTimeline, MatrixClient, Room } from 'matrix-js-sdk';
-import { KnockRequest } from '../types';
+import { ChildEvent, KnockEvent } from '../types';
 
 
 export async function determineUserRooms(
@@ -53,14 +53,14 @@ export async function getKnockEvents(
 	roomId: string,
 ) {
 	const stateEvents = await client.roomState(roomId);
-	const knockRequests: KnockRequest[] = stateEvents
+	const knockEvents: KnockEvent[] = stateEvents
 		.filter((event) =>
 			event.type === 'm.room.member' &&
 			event.content.membership === 'knock'
 		)
 		.map((event) => {
 			const time = new Date(event.origin_server_ts);
-			const knock: KnockRequest = {
+			const knock: KnockEvent = {
 				roomId: event.room_id,
 				// @ts-expect-error
 				userId: event.user_id, // alternatively `sender` or `state_key`
@@ -71,5 +71,45 @@ export async function getKnockEvents(
 			return knock;
 		});
 
-	return knockRequests;
+	return knockEvents;
+}
+
+
+export async function getChildEvents(
+	client: MatrixClient,
+	roomId: string,
+) {
+	const stateEvents = await client.roomState(roomId);
+	const childEvents: ChildEvent[] = await Promise.all(
+		stateEvents
+			.filter((event) => {
+				const { content, type } = event;
+				return (
+					type === 'm.space.child' &&
+					Object.keys(content || {}).length > 0 // 'add' events only
+					// TODO: should we also show 'remove' events?
+				);
+			})
+			.map(async (event) => {
+				const childRoomId = event.state_key;
+				const childRoom = client.getRoom(childRoomId);
+
+				// @ts-expect-error
+				const userId = event.user_id; // alternatively `sender`
+				const { displayname } = await client.getProfileInfo(userId);
+
+				const time = new Date(event.origin_server_ts);
+				const childEvent: ChildEvent = {
+					roomId: event.room_id,
+					userId,
+					userDisplayName: displayname,
+					time,
+					childRoomId,
+					childRoomName: childRoom?.name,
+				};
+				return childEvent;
+			})
+	);
+
+	return childEvents;
 }

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { Fragment, ReactNode, useState } from 'react';
 import { ClientEvent, MatrixClient, MatrixError, Room } from 'matrix-js-sdk';
 
@@ -5,8 +6,8 @@ import Login from './Login';
 import Main from './Main';
 import { Loading } from './Loading';
 
-import { determineUserRooms, getKnockEvents } from '../utils/matrix';
-import { AppStatus, KnockRequest, User } from '../types';
+import { determineUserRooms, getChildEvents, getKnockEvents } from '../utils/matrix';
+import { AppStatus, ChildEvent, KnockEvent, User } from '../types';
 import { MSG_NOT_A_MODERATOR, projectTitle } from '../constants';
 
 
@@ -15,31 +16,52 @@ interface AppProps {
 }
 
 
-function App({ client }: AppProps) {
+function App({ client }: AppProps): ReactNode {
 	const [user, setUser] = useState<User | null>(null);
 	const [loginErrors, setLoginErrors] = useState<string[]>([]);
 	const [status, setStatus] = useState<AppStatus>('logged-out');
 	const [isRefreshing, setIsRefreshing] = useState(false);
 	const [moderatorRooms, setModeratorRooms] = useState<Room[]>([]);
-	const [knocksByRoom, setKnocksByRoom] = useState<Record<string, KnockRequest[]>>({});
+	const [knocksByRoom, setKnocksByRoom] = useState<Record<string, KnockEvent[]>>({});
+	const [childrenByRoom, setChildrenByRoom] = useState<Record<string, ChildEvent[]>>({});
 
 	const updateEventsData = async (moderatorRooms: Room[]) => {
 		setIsRefreshing(true);
-		const knocksByRoom: Record<string, KnockRequest[]> = {};
+		const knocksByRoom: Record<string, KnockEvent[]> = {};
+		const childrenByRoom: Record<string, ChildEvent[]> = {};
 		for (const room of moderatorRooms) {
 			knocksByRoom[room.roomId] = await getKnockEvents(client, room.roomId);
+			childrenByRoom[room.roomId] = await getChildEvents(client, room.roomId);
 		}
 		setKnocksByRoom(knocksByRoom);
+		setChildrenByRoom(childrenByRoom);
 		setIsRefreshing(false);
 	};
 
-	const acceptKnock = async (knock: KnockRequest) => {
-		await client.invite(knock.roomId, knock.userId);
+	const acceptKnock = async (knockEvent: KnockEvent) => {
+		await client.invite(knockEvent.roomId, knockEvent.userId);
 		updateEventsData(moderatorRooms);
 	};
 
-	const rejectKnock = async (knock: KnockRequest) => {
-		await client.kick(knock.roomId, knock.userId, /* 'Knock request denied.' */);
+	const rejectKnock = async (knockEvent: KnockEvent) => {
+		await client.kick(knockEvent.roomId, knockEvent.userId, /* 'Knock request denied.' */);
+		updateEventsData(moderatorRooms);
+	};
+
+	const removeChild = async (childEvent: ChildEvent) => {
+		const spaceId = childEvent.roomId;
+		const childRoomId = childEvent.childRoomId;
+		try {
+			await client.sendStateEvent(
+				spaceId,
+				// @ts-expect-error
+				'm.space.child',
+				{}, // empty content to remove the room from the space
+				childRoomId
+			);
+		} catch (err) {
+			console.error(`Failed to remove room ${childRoomId} from space ${spaceId}:`, err);
+		}
 		updateEventsData(moderatorRooms);
 	};
 
@@ -123,15 +145,18 @@ function App({ client }: AppProps) {
 	} else if (status === 'ready') {
 		console.assert(user != null);
 		if (user === null) {
-			return console.error('Invalid state');
+			console.error('Invalid state');
+			return null;
 		}
 		content = <Main
 			user={user}
 			isRefreshing={isRefreshing}
 			moderatorRooms={moderatorRooms}
+			childrenByRoom={childrenByRoom}
 			knocksByRoom={knocksByRoom}
 			acceptKnock={acceptKnock}
 			rejectKnock={rejectKnock}
+			removeChild={removeChild}
 		/>;
 	}
 
