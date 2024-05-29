@@ -10,13 +10,14 @@ Rename `.env-example` to `.env` and edit es needed.
 
 ## Run
 
-```bash
-$ npm run dev
+```shell
+npm run dev
 ```
 
 
 ## Build
 
-```bash
-$ npm run build
+```shell
+npm run build
+# outputs static files to ./dist
 ```
