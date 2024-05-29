@@ -13,20 +13,24 @@ function Login({ onSubmit, errors }: LoginProps) {
 		);
 	};
 
-	return <form onSubmit={handleSubmit}>
-		<div>
-			<input type="text" name="user" placeholder="User name" required />
-		</div>
-		<div>
-			<input type="password" name="password" placeholder="Password" required />
-		</div>
-		<div>
-			<button type="submit">Login</button>
-		</div>
-		<div>{errors.map((msg, i) => {
-			return <div key={i} className="error-msg">{msg}</div>;
-		})}</div>
-	</form>;
+	return <section className="login">
+		<form onSubmit={handleSubmit}>
+			<div>
+				<label htmlFor="user">username</label>
+				<input type="text" name="user" placeholder="u.name" required />
+			</div>
+			<div>
+				<label htmlFor="password">password</label>
+				<input type="password" name="password" placeholder="••••••••••••••••••••••••" required />
+			</div>
+			<div>
+				<button type="submit">LOGIN</button>
+			</div>
+			<div>
+				{errors.map((msg, i) => <div key={i} className="error-msg">{msg}</div>)}
+			</div>
+		</form>
+	</section>;
 }
 
 export default Login;

@@ -14,7 +14,7 @@ const client = sdk.createClient({
 	baseUrl: import.meta.env.VITE_MATRIX_SERVER_URL
 });
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+ReactDOM.createRoot(document.getElementById('app')!).render(
 	<React.StrictMode>
 		<App client={client} />
 	</React.StrictMode>,

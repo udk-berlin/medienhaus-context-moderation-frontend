@@ -1,3 +1,6 @@
+@import url('assets/css/index.css');
+
+
 :root {
 	font-synthesis: none;
 	text-rendering: optimizeLegibility;
@@ -12,4 +15,19 @@
 
 .error-msg {
 	color: red;
+}
+
+.disabled {
+	color: grey;
+}
+
+.KnockEventItem {
+	display: inline-grid;
+	width: calc(100% - 1rem);
+	grid-template-columns: auto min-content;
+	gap: 1rem;
+}
+.KnockEventItem .buttons {
+	display: flex;
+	gap: 1rem;
 }

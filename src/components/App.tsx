@@ -6,6 +6,8 @@ import Main from './Main';
 
 import { determineUserRooms, getKnockEvents } from '../utils/matrix';
 import { AppStatus, KnockRequest, User } from '../types';
+import { MSG_NOT_A_MODERATOR, projectTitle } from '../constants';
+import { Loading } from './Loading';
 
 
 interface AppProps {
@@ -17,15 +19,19 @@ function App({ client }: AppProps) {
 	const [user, setUser] = useState<User | null>(null);
 	const [loginErrors, setLoginErrors] = useState<string[]>([]);
 	const [status, setStatus] = useState<AppStatus>('logged-out');
+	const [isRefreshing, setIsRefreshing] = useState(false);
 	const [moderatorRooms, setModeratorRooms] = useState<Room[]>([]);
 	const [knocksByRoom, setKnocksByRoom] = useState<Record<string, KnockRequest[]>>({});
 
 	const updateEventsData = async (moderatorRooms: Room[]) => {
+		setIsRefreshing(true);
+		console.log('updating events data...');
 		const knocksByRoom: Record<string, KnockRequest[]> = {};
 		for (const room of moderatorRooms) {
 			knocksByRoom[room.roomId] = await getKnockEvents(client, room.roomId);
 		}
 		setKnocksByRoom(knocksByRoom);
+		setIsRefreshing(false);
 	};
 
 	const acceptKnock = async (knock: KnockRequest) => {
@@ -83,7 +89,7 @@ function App({ client }: AppProps) {
 			});
 
 			setStatus('initial-sync');
-			client.startClient();
+			/* await */ client.startClient();
 		} catch (err) {
 			if (err instanceof MatrixError) {
 				console.error('Login failed:', err.data.error);
@@ -93,10 +99,16 @@ function App({ client }: AppProps) {
 		}
 	};
 
-	const logout = () => {
+	const logout: React.MouseEventHandler<HTMLElement> = (event) => {
+		event.preventDefault();
 		client.logout(true);
 		setStatus('logged-out');
 		setUser(null);
+	};
+
+	const refresh: React.MouseEventHandler<HTMLElement> = (event) => {
+		event.preventDefault();
+		updateEventsData(moderatorRooms);
 	};
 
 	let content: ReactNode = null;
@@ -106,30 +118,52 @@ function App({ client }: AppProps) {
 			errors={loginErrors}
 		/>;
 	} else if (status === 'initial-sync') {
-		content = 'Syncing...'; // TODO: show spinner
+		content = <Loading />;
 	} else if (status === 'not-a-moderator') {
-		content = 'You do not moderate any spaces or rooms.';
+		content = MSG_NOT_A_MODERATOR;
 	} else if (status === 'ready') {
 		console.assert(user != null);
 		if (user === null) {
-			console.error('Invalid state');
-			return;
+			return console.error('Invalid state');
 		}
-		content = <Fragment>
-			<button onClick={logout}>Logout</button>
-			<Main
-				user={user}
-				moderatorRooms={moderatorRooms}
-				knocksByRoom={knocksByRoom}
-				acceptKnock={acceptKnock}
-				rejectKnock={rejectKnock}
-			/>
-		</Fragment>;
+		content = <Main
+			user={user}
+			isRefreshing={isRefreshing}
+			moderatorRooms={moderatorRooms}
+			knocksByRoom={knocksByRoom}
+			acceptKnock={acceptKnock}
+			rejectKnock={rejectKnock}
+		/>;
 	}
 
 	return <Fragment>
-		<h1>Moderator quick actions</h1>
-		<main>{content}</main>
+		<header>
+			<a href="/"><h1>udk/{projectTitle}</h1></a>
+		</header>
+		<nav>
+			{(status !== 'logged-out') && <div>
+				<div>
+					<a href="/" onClick={logout}>/logout</a>
+				</div>
+				<div>
+					<a href="/" onClick={refresh}>/refresh</a>
+				</div>
+			</div>}
+			{/* <select className="languageSelector">
+				<option value="en" selected>EN</option>
+				<option value="de">DE</option>
+			</select> */}
+		</nav>
+
+		<main>
+			{content}
+		</main>
+
+		<footer>
+			<p className="copyleft">
+				🄯 2024 <a href="https://medienhaus.dev" rel="nofollow noopener noreferrer" target="_blank"><strong>medienhaus/</strong></a>
+			</p>
+		</footer>
 	</Fragment>;
 }
 
