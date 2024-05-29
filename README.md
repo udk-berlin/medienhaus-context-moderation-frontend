@@ -8,6 +8,13 @@ Medienhaus CMS email notification system frontend.
 Rename `.env-example` to `.env` and edit es needed.
 
 
+## Install
+
+```shell
+npm install
+```
+
+
 ## Run
 
 ```shell
