@@ -26,9 +26,9 @@ function Login({ onSubmit, errors }: LoginProps) {
 			<div>
 				<button type="submit">LOGIN</button>
 			</div>
-			<div>
-				{errors.map((msg, i) => <div key={i} className="error-msg">{msg}</div>)}
-			</div>
+			<ul>
+				{errors.map((msg, i) => <li key={i} className="error-msg">{msg}</li>)}
+			</ul>
 		</form>
 	</section>;
 }

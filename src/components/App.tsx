@@ -3,11 +3,11 @@ import { ClientEvent, MatrixClient, MatrixError, Room } from 'matrix-js-sdk';
 
 import Login from './Login';
 import Main from './Main';
+import { Loading } from './Loading';
 
 import { determineUserRooms, getKnockEvents } from '../utils/matrix';
 import { AppStatus, KnockRequest, User } from '../types';
 import { MSG_NOT_A_MODERATOR, projectTitle } from '../constants';
-import { Loading } from './Loading';
 
 
 interface AppProps {
@@ -25,7 +25,6 @@ function App({ client }: AppProps) {
 
 	const updateEventsData = async (moderatorRooms: Room[]) => {
 		setIsRefreshing(true);
-		console.log('updating events data...');
 		const knocksByRoom: Record<string, KnockRequest[]> = {};
 		for (const room of moderatorRooms) {
 			knocksByRoom[room.roomId] = await getKnockEvents(client, room.roomId);
@@ -149,10 +148,6 @@ function App({ client }: AppProps) {
 					<a href="/" onClick={refresh}>/refresh</a>
 				</div>
 			</div>}
-			{/* <select className="languageSelector">
-				<option value="en" selected>EN</option>
-				<option value="de">DE</option>
-			</select> */}
 		</nav>
 
 		<main>
