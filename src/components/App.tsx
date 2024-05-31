@@ -6,7 +6,7 @@ import Login from './Login';
 import Main from './Main';
 import { Loading } from './Loading';
 
-import { determineUserRooms, getChildEvents, getKnockEvents } from '../utils/matrix';
+import { determineUserRooms, getChildEvents, getKnockEvents, getPublicRooms } from '../utils/matrix';
 import { AppStatus, ChildEvent, KnockEvent, User } from '../types';
 import { MSG_NOT_A_MODERATOR, projectTitle, roomsToIgnore } from '../constants';
 
@@ -89,9 +89,7 @@ function App({ client }: AppProps): ReactNode {
 					});
 
 					// get public rooms
-					const roomDirectory = (
-						await client.publicRooms({ limit: 99999 })
-					).chunk;
+					const roomDirectory = await getPublicRooms(client);
 					const listedRoomsIds = roomDirectory.map((it) => it.room_id);
 
 					// get rooms the user is a moderator of

@@ -3,6 +3,14 @@ import { EventTimeline, MatrixClient, Room } from 'matrix-js-sdk';
 import { ChildEvent, KnockEvent } from '../types';
 
 
+export async function getPublicRooms(client: MatrixClient) {
+	const roomDirectory = (
+		await client.publicRooms({ limit: 99999 })
+	).chunk;
+	return roomDirectory;
+}
+
+
 export async function determineUserRooms(
 	rooms: Room[],
 	listedRoomsIds: string[],
