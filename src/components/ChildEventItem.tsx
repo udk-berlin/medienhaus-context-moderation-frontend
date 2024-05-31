@@ -11,14 +11,13 @@ interface ChildEventItemProps {
 
 const ChildEventItem = ({ data, removeChild }: ChildEventItemProps) => {
 	const { t } = useTranslation();
-	const roomName = data.childRoomName || '(UNKNOWN)';
 
 	return <div className="ChildEventItem">
 		<div className="metadata">
 			<div>
 				<Trans
 					i18nKey="USER_ADDED_ROOM"
-					values={{ user: data.userDisplayName, room: roomName }}
+					values={{ user: data.userDisplayName, room: data.childRoomName }}
 				/>
 			</div>
 			<div>{formatDate(data.time)}</div>

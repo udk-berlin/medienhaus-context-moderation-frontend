@@ -1,19 +1,21 @@
-import { Fragment } from 'react';
+import { Fragment, ReactNode } from 'react';
 import { Room } from 'matrix-js-sdk';
 import { useTranslation } from 'react-i18next';
 
-import { ChildEvent, KnockEvent, User } from '../types';
+import { ChildEvent, ChildrenByRoom, KnockEvent, KnocksByRoom, User } from '../types';
 import KnockEventItem from './KnockEventItem';
 import { Loading } from './Loading';
 import ChildEventItem from './ChildEventItem';
+import KnockRejectedEventItem from './KnockRejectedEventItem';
+import ChildRemovedEventItem from './ChildEventRemovedItem';
 
 
 interface MainProps {
 	user: User,
 	isRefreshing: boolean,
 	moderatorRooms: Room[],
-	childrenByRoom: Record<string, ChildEvent[]>,
-	knocksByRoom: Record<string, KnockEvent[]>,
+	childrenByRoom: ChildrenByRoom,
+	knocksByRoom: KnocksByRoom,
 	acceptKnock: (item: KnockEvent) => Promise<void>,
 	rejectKnock: (item: KnockEvent) => Promise<void>,
 	removeChild: (item: ChildEvent) => Promise<void>,
@@ -43,6 +45,7 @@ function Main({
 		{(isRefreshing) ? <Loading /> : moderatorRooms.map((room) => {
 			const knocks = knocksByRoom[room.roomId] || [];
 			const children = childrenByRoom[room.roomId] || [];
+
 			return <section className="section" key={room.roomId}>
 				<h3>{room.name}</h3>
 				<h4>{t('USERS_WANTING_TO_JOIN')}:</h4>
@@ -50,12 +53,20 @@ function Main({
 					? <span className="disabled">({t('EMPTY')})</span>
 					: <ul>
 						{knocks.map((item) => {
-							return <li key={item.userId}>
-								<KnockEventItem
+							let content: ReactNode = null;
+							if ('rejectedByUserId' in item) {
+								content = <KnockRejectedEventItem
+									data={item}
+								/>;
+							} else {
+								content = <KnockEventItem
 									data={item}
 									acceptKnock={acceptKnock}
 									rejectKnock={rejectKnock}
-								/>
+								/>;
+							}
+							return <li key={item.userId}>
+								{content}
 							</li>;
 						})}
 					</ul>
@@ -65,11 +76,19 @@ function Main({
 					? <span className="disabled">({t('EMPTY')})</span>
 					: <ul>
 						{children.map((item) => {
-							return <li key={item.childRoomId}>
-								<ChildEventItem
+							let content: ReactNode = null;
+							if ('removedByUserName' in item) {
+								content = <ChildRemovedEventItem
+									data={item}
+								/>;
+							} else {
+								content = <ChildEventItem
 									data={item}
 									removeChild={removeChild}
-								/>
+								/>;
+							}
+							return <li key={item.childRoomId}>
+								{content}
 							</li>;
 						})}
 					</ul>

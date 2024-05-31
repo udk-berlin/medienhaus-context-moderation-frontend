@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { EventTimeline, MatrixClient, Room } from 'matrix-js-sdk';
-import { ChildEvent, KnockEvent } from '../types';
+import { ChildEvent, ChildRemovedEvent, KnockEvent, KnockRejectedEvent } from '../types';
+import { KnownMembership } from 'matrix-js-sdk/lib/types';
+import { UNKNOWN } from '../constants';
 
 
 export async function getPublicRooms(client: MatrixClient) {
@@ -61,25 +63,55 @@ export async function getKnockEvents(
 	roomId: string,
 ) {
 	const stateEvents = await client.roomState(roomId);
-	const knockEvents: KnockEvent[] = stateEvents
+
+	// ban | invite | join | knock | leave
+	const membershipTypes = [KnownMembership.Knock, KnownMembership.Leave];
+
+	const knockEvents: Array<Promise<KnockEvent | KnockRejectedEvent>> = stateEvents
 		.filter((event) =>
 			event.type === 'm.room.member' &&
-			event.content.membership === 'knock'
+			membershipTypes.includes(event.content.membership as KnownMembership)
 		)
-		.map((event) => {
+		.map(async (event) => {
 			const time = new Date(event.origin_server_ts);
-			const knock: KnockEvent = {
+			const userDisplayName = event.content.displayname || `(${UNKNOWN})`;
+			const common: Pick<KnockEvent, 'roomId' | 'userId' | 'userDisplayName' | 'time'> = {
 				roomId: event.room_id,
-				// @ts-expect-error
-				userId: event.user_id, // alternatively `sender` or `state_key`
-				userDisplayName: event.content.displayname,
-				reason: event.content.reason as (string | undefined),
+				userId: event.state_key,
+				userDisplayName,
 				time
 			};
-			return knock;
-		});
 
-	return knockEvents;
+			// user knocked
+			if (event.content.membership === KnownMembership.Knock) {
+				const knock: KnockEvent = {
+					...common,
+					reason: event.content.reason as (string | undefined),
+				};
+				return knock;
+			}
+
+			// user's knock was rejected
+			if (
+				event.content.membership === KnownMembership.Leave &&
+				event.sender !== event.state_key
+			) {
+				const senderName = (
+					await client.getProfileInfo(event.sender)
+				).displayname || `(${UNKNOWN})`;
+				const knockRejected: KnockRejectedEvent = {
+					...common,
+					rejectedByUserId: event.sender,
+					rejectedByUserName: senderName,
+				};
+				return knockRejected;
+			}
+
+			return undefined as unknown as (KnockEvent | KnockRejectedEvent);
+		})
+		.filter((it) => (it !== undefined));
+
+	return (await Promise.all(knockEvents)).reverse();
 }
 
 
@@ -88,36 +120,66 @@ export async function getChildEvents(
 	roomId: string,
 ) {
 	const stateEvents = await client.roomState(roomId);
-	const childEvents: ChildEvent[] = await Promise.all(
-		stateEvents
-			.filter((event) => {
-				const { content, type } = event;
-				return (
-					type === 'm.space.child' &&
-					Object.keys(content || {}).length > 0 // 'add' events only
-					// TODO: should we also show 'remove' events?
-				);
-			})
-			.map(async (event) => {
-				const childRoomId = event.state_key;
-				const childRoom = client.getRoom(childRoomId);
+	const childEvents: Array<Promise<ChildEvent | ChildRemovedEvent>> = stateEvents
+		.filter((event) => {
+			const { type } = event;
+			return (type === 'm.space.child');
+		})
+		.map(async (event) => {
+			const { content } = event;
+			const wasAdded = Object.keys(content || {}).length > 0;
 
-				// @ts-expect-error
-				const userId = event.user_id; // alternatively `sender`
-				const { displayname } = await client.getProfileInfo(userId);
+			const childRoomId = event.state_key;
+			const childRoom = client.getRoom(childRoomId);
+			const childRoomName = childRoom?.name || `(${UNKNOWN})`;
 
-				const time = new Date(event.origin_server_ts);
-				const childEvent: ChildEvent = {
-					roomId: event.room_id,
-					userId,
-					userDisplayName: displayname,
-					time,
-					childRoomId,
-					childRoomName: childRoom?.name,
+			const senderName = (
+				await client.getProfileInfo(event.sender)
+			).displayname || `(${UNKNOWN})`;
+
+			const time = new Date(event.origin_server_ts);
+			const common = {
+				time,
+				roomId: event.room_id,
+				childRoomId,
+				childRoomName,
+			};
+
+			if (wasAdded) {
+				const childAdded: ChildEvent = {
+					...common,
+					userId: event.sender,
+					userDisplayName: senderName,
 				};
-				return childEvent;
-			})
-	);
+				return childAdded;
+			} else {
+				const prevSender = event.unsigned?.prev_sender;
 
-	return childEvents;
+				if (prevSender === event.sender) {
+					// removed by the same user
+					return undefined as unknown as (ChildEvent | ChildRemovedEvent);
+				}
+
+				let prevSenderName = `(${UNKNOWN})`;
+				if (prevSender) {
+					prevSenderName = (
+						await client.getProfileInfo(prevSender)
+					).displayname || `(${UNKNOWN})`;
+				}
+				const senderName = (
+					await client.getProfileInfo(event.sender)
+				).displayname || `(${UNKNOWN})`;
+				const childRemoved: ChildRemovedEvent = {
+					...common,
+					userId: prevSender as string,
+					userDisplayName: prevSenderName,
+					removedByUserId: event.sender,
+					removedByUserName: senderName
+				};
+				return childRemoved;
+			}
+		})
+		.filter((it) => (it !== undefined));
+
+	return (await Promise.all(childEvents)).reverse();
 }

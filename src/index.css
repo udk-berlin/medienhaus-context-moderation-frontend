@@ -22,12 +22,15 @@
 }
 
 .KnockEventItem,
-.ChildEventItem {
+.KnockRejectedEventItem,
+.ChildEventItem,
+.ChildRemovedEventItem {
 	display: inline-grid;
 	width: calc(100% - 1rem);
 	grid-template-columns: auto min-content;
 	gap: 1rem;
 }
+
 .KnockEventItem .buttons,
 .ChildEventItem .buttons {
 	display: flex;
