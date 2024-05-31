@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { Fragment, ReactNode, useCallback, useState } from 'react';
+import { Fragment, ReactNode, useState } from 'react';
 import { ClientEvent, MatrixClient, MatrixError, Room, RoomStateEvent } from 'matrix-js-sdk';
+import { useTranslation } from 'react-i18next';
 
 import Login from './Login';
 import Main from './Main';
@@ -8,7 +9,8 @@ import { Loading } from './Loading';
 
 import { determineUserRooms, getChildEvents, getKnockEvents, getPublicRooms } from '../utils/matrix';
 import { AppStatus, ChildEvent, KnockEvent, User } from '../types';
-import { MSG_NOT_A_MODERATOR, projectTitle, roomsToIgnore } from '../constants';
+import { projectTitle, roomsToIgnore } from '../constants';
+import LanguageSelector from './LanguageSelector';
 
 
 interface AppProps {
@@ -17,6 +19,8 @@ interface AppProps {
 
 
 function App({ client }: AppProps): ReactNode {
+	const { t } = useTranslation();
+
 	const [user, setUser] = useState<User | null>(null);
 	const [loginErrors, setLoginErrors] = useState<string[]>([]);
 	const [status, setStatus] = useState<AppStatus>('logged-out');
@@ -61,7 +65,7 @@ function App({ client }: AppProps): ReactNode {
 	};
 
 	const updateEventsData = async (moderatorRooms: Room[]) => {
-		console.info('Updating events data...', moderatorRooms);
+		console.info('Updating events data...');
 
 		setIsRefreshing(true); // TODO: keep?
 
@@ -192,7 +196,7 @@ function App({ client }: AppProps): ReactNode {
 	} else if (status === 'initial-sync') {
 		content = <Loading />;
 	} else if (status === 'not-a-moderator') {
-		content = MSG_NOT_A_MODERATOR;
+		content = t('MSG_NOT_A_MODERATOR');
 	} else if (status === 'ready') {
 		console.assert(user != null);
 		if (user === null) {
@@ -213,7 +217,7 @@ function App({ client }: AppProps): ReactNode {
 
 	return <Fragment>
 		<header>
-			<a href="/"><h1>udk/{projectTitle}</h1></a>
+			<a href="/"><h1>udk/cms: {projectTitle}</h1></a>
 		</header>
 		<nav>
 			{(status !== 'logged-out') && <div>
@@ -224,6 +228,8 @@ function App({ client }: AppProps): ReactNode {
 					<a href="/" onClick={refresh}>/refresh</a>
 				</div>
 			</div>}
+
+			<LanguageSelector />
 		</nav>
 
 		<main>

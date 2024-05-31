@@ -1,5 +1,8 @@
+import { useTranslation } from 'react-i18next';
+
 import { KnockEvent } from '../types';
 import { formatDate } from '../utils/date';
+
 
 interface KnockEventItemProps {
 	data: KnockEvent,
@@ -8,15 +11,17 @@ interface KnockEventItemProps {
 }
 
 const KnockEventItem = ({ data, acceptKnock, rejectKnock, }: KnockEventItemProps) => {
+	const { t } = useTranslation();
+
 	return <div className="KnockEventItem">
 		<div className="metadata">
-			<div><strong>{data.userDisplayName}</strong> knocked</div>
+			<div><strong>{data.userDisplayName}</strong> {t('WANTS_TO_JOIN')}</div>
 			<div>{formatDate(data.time)}</div>
-			<div>Message: {data.reason || <span className="disabled">(none)</span>}</div>
+			{data.reason && <div>{t('MESSAGE')}: {data.reason}</div>}
 		</div>
 		<div className="buttons">
-			<button onClick={() => acceptKnock(data)}>accept</button>
-			<button onClick={() => rejectKnock(data)}>reject</button>
+			<button onClick={() => acceptKnock(data)}>{t('ACCEPT')}</button>
+			<button onClick={() => rejectKnock(data)}>{t('REJECT')}</button>
 		</div>
 	</div>;
 };
