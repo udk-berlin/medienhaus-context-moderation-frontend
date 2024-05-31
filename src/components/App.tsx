@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { Fragment, ReactNode, useState } from 'react';
-import { ClientEvent, MatrixClient, MatrixError, Room } from 'matrix-js-sdk';
+import { Fragment, ReactNode, useCallback, useState } from 'react';
+import { ClientEvent, MatrixClient, MatrixError, Room, RoomStateEvent } from 'matrix-js-sdk';
 
 import Login from './Login';
 import Main from './Main';
@@ -25,8 +25,46 @@ function App({ client }: AppProps): ReactNode {
 	const [knocksByRoom, setKnocksByRoom] = useState<Record<string, KnockEvent[]>>({});
 	const [childrenByRoom, setChildrenByRoom] = useState<Record<string, ChildEvent[]>>({});
 
-	const updateEventsData = async (moderatorRooms: Room[]) => {
+	const updateModeratorRooms = async () => {
+		console.info('Updating rooms data...');
+
+		const userId = client.getUserId();
+		console.assert(userId !== null);
+		if (userId === null) {
+			console.log('Failed to get user id. This should not happen.');
+			return [];
+		}
+
 		setIsRefreshing(true);
+
+		// get public rooms
+		const roomDirectory = await getPublicRooms(client);
+		const listedRoomsIds = roomDirectory.map((it) => it.room_id);
+
+		// get rooms the user is a moderator of
+		const rooms = client.getRooms()
+			// it doesn't make sense to show certain rooms, so we remove them
+			.filter((room) => !roomsToIgnore.includes(room.name));
+		const moderatorRooms = await determineUserRooms(rooms, listedRoomsIds, userId);
+		setModeratorRooms(moderatorRooms);
+
+		if (!moderatorRooms.length) {
+			setStatus('not-a-moderator');
+		} else {
+			updateEventsData(moderatorRooms);
+			setStatus('ready');
+		}
+
+		setIsRefreshing(false);
+
+		return moderatorRooms;
+	};
+
+	const updateEventsData = async (moderatorRooms: Room[]) => {
+		console.info('Updating events data...', moderatorRooms);
+
+		setIsRefreshing(true); // TODO: keep?
+
 		const knocksByRoom: Record<string, KnockEvent[]> = {};
 		const childrenByRoom: Record<string, ChildEvent[]> = {};
 		for (const room of moderatorRooms) {
@@ -35,6 +73,7 @@ function App({ client }: AppProps): ReactNode {
 		}
 		setKnocksByRoom(knocksByRoom);
 		setChildrenByRoom(childrenByRoom);
+
 		setIsRefreshing(false);
 	};
 
@@ -88,29 +127,40 @@ function App({ client }: AppProps): ReactNode {
 						displayName: displayname
 					});
 
-					// get public rooms
-					const roomDirectory = await getPublicRooms(client);
-					const listedRoomsIds = roomDirectory.map((it) => it.room_id);
+					let moderatorRooms = await updateModeratorRooms();
 
-					// get rooms the user is a moderator of
-					const rooms = client.getRooms()
-						// it doesn't make sense to show certain rooms, so we remove them
-						.filter((room) => !roomsToIgnore.includes(room.name));
-					const moderatorRooms = await determineUserRooms(rooms, listedRoomsIds, user_id);
-					setModeratorRooms(moderatorRooms);
-					if (!moderatorRooms.length) {
-						setStatus('not-a-moderator');
-					} else {
-						updateEventsData(moderatorRooms);
-						setStatus('ready');
-					}
+					// listen to events so that we can refresh the data accordingly
+					client.on(RoomStateEvent.Members, async (_event, _state, member) => {
+						if (member.userId === client.getUserId()) {
+							// the user's membership changed
+							moderatorRooms = await updateModeratorRooms();
+						} else {
+							// someone else's membership changed
+							updateEventsData(moderatorRooms);
+						}
+					});
+					client.on(RoomStateEvent.Events, async (event) => {
+						const type = event.getType();
+						if (type === 'm.room.power_levels') {
+							const content = event.getContent();
+							const userId = client.getUserId()!;
+							const newPowerLevel = content.users[userId];
+							if (newPowerLevel !== undefined) {
+								// the user's power level changed
+								moderatorRooms = await updateModeratorRooms();
+							}
+						} else if (type === 'm.space.child') {
+							// connected rooms changed
+							updateEventsData(moderatorRooms);
+						}
+					});
 				} else {
 					console.error('Sync failed!');
 				}
 			});
 
 			setStatus('initial-sync');
-			/* await */ client.startClient();
+			client.startClient();
 		} catch (err) {
 			if (err instanceof MatrixError) {
 				console.error('Login failed:', err.data.error);
@@ -120,16 +170,17 @@ function App({ client }: AppProps): ReactNode {
 		}
 	};
 
-	const logout: React.MouseEventHandler<HTMLElement> = (event) => {
+	const logout: React.MouseEventHandler<HTMLElement> = async (event) => {
 		event.preventDefault();
-		client.logout(true);
 		setStatus('logged-out');
 		setUser(null);
+		await client.logout(true);
+		client.stopClient();
 	};
 
 	const refresh: React.MouseEventHandler<HTMLElement> = (event) => {
 		event.preventDefault();
-		updateEventsData(moderatorRooms);
+		updateModeratorRooms();
 	};
 
 	let content: ReactNode = null;
