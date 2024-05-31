@@ -6,11 +6,11 @@ import { useTranslation } from 'react-i18next';
 import Login from './Login';
 import Main from './Main';
 import { Loading } from './Loading';
+import LanguageSelector from './LanguageSelector';
 
 import { determineUserRooms, getChildEvents, getKnockEvents, getPublicRooms } from '../utils/matrix';
 import { AppStatus, ChildEvent, KnockEvent, User } from '../types';
 import { projectTitle, roomsToIgnore, lsAccessToken, lsUserId } from '../constants';
-import LanguageSelector from './LanguageSelector';
 
 
 interface AppProps {
@@ -97,6 +97,7 @@ function App({ client }: AppProps): ReactNode {
 				})();
 			}
 		},
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 		[]
 	);
 
@@ -138,7 +139,7 @@ function App({ client }: AppProps): ReactNode {
 	const updateEventsData = async (moderatorRooms: Room[]) => {
 		console.info('Updating events data...');
 
-		setIsRefreshing(true); // TODO: keep?
+		setIsRefreshing(true);
 
 		const knocksByRoom: Record<string, KnockEvent[]> = {};
 		const childrenByRoom: Record<string, ChildEvent[]> = {};
