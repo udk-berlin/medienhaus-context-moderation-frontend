@@ -2,7 +2,7 @@ import { Fragment, ReactNode } from 'react';
 import { Room } from 'matrix-js-sdk';
 import { useTranslation } from 'react-i18next';
 
-import { ChildEvent, KnockEvent, KnockRejectedEvent, KnocksByRoom, User } from '../types';
+import { ChildEvent, KnockEvent, KnocksByRoom, User } from '../types';
 import KnockEventItem from './KnockEventItem';
 import { Loading } from './Loading';
 import ChildEventItem from './ChildEventItem';
@@ -53,7 +53,7 @@ function Main({
 					: <ul>
 						{knocks.map((item) => {
 							let content: ReactNode = null;
-							if ((item as KnockRejectedEvent).rejectedByUserId) {
+							if ('rejectedByUserId' in item) {
 								content = <KnockRejectedEventItem
 									data={item}
 								/>;

@@ -1,4 +1,4 @@
-import { useTranslation } from 'react-i18next';
+import { Trans } from 'react-i18next';
 
 import { KnockRejectedEvent } from '../types';
 import { formatDate } from '../utils/date';
@@ -9,11 +9,14 @@ interface KnockRejectedEventItemProps {
 }
 
 const KnockRejectedEventItem = ({ data }: KnockRejectedEventItemProps) => {
-	const { t } = useTranslation();
-
 	return <div className="KnockRejectedEventItem">
 		<div className="metadata">
-			<div>REJECTED</div>
+			<div>
+				<Trans
+					i18nKey="USER_KNOCK_REJECTED"
+					values={{ user: data.userDisplayName, by: data.rejectedByUserName }}
+				/>
+			</div>
 			<div>{formatDate(data.time)}</div>
 		</div>
 		{/* <div className="buttons">

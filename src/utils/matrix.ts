@@ -2,6 +2,7 @@
 import { EventTimeline, MatrixClient, Room } from 'matrix-js-sdk';
 import { ChildEvent, KnockEvent, KnockRejectedEvent } from '../types';
 import { KnownMembership } from 'matrix-js-sdk/lib/types';
+import { UNKNOWN } from '../constants';
 
 
 export async function getPublicRooms(client: MatrixClient) {
@@ -66,24 +67,21 @@ export async function getKnockEvents(
 	// ban | invite | join | knock | leave
 	const membershipTypes = [KnownMembership.Knock, KnownMembership.Leave];
 
-	const knockEvents: Array<KnockEvent | KnockRejectedEvent> = stateEvents
+	const knockEvents: Array<Promise<KnockEvent | KnockRejectedEvent>> = stateEvents
 		.filter((event) =>
 			event.type === 'm.room.member' &&
 			membershipTypes.includes(event.content.membership as KnownMembership)
 		)
-		.map((event) => {
-			console.log(event.content.membership, event.state_key, event);
-			return event;
-		})
-		.map((event) => {
+		.map(async (event) => {
 			const time = new Date(event.origin_server_ts);
 
 			// user knocked
-			if (event.content.membership === KnownMembership.Leave) {
+			if (event.content.membership === KnownMembership.Knock) {
+				const userDisplayName = event.content.displayname || `(${UNKNOWN})`;
 				const knock: KnockEvent = {
 					roomId: event.room_id,
 					userId: event.state_key,
-					userDisplayName: event.content.displayname,
+					userDisplayName,
 					reason: event.content.reason as (string | undefined),
 					time
 				};
@@ -95,12 +93,17 @@ export async function getKnockEvents(
 				event.content.membership === KnownMembership.Leave &&
 				event.sender !== event.state_key
 			) {
+				const senderName = (
+					await client.getProfileInfo(event.sender)
+				).displayname || `(${UNKNOWN})`;
+				const userDisplayName = event.content.displayname || `(${UNKNOWN})`;
 				const knockRejected: KnockRejectedEvent = {
 					roomId: event.room_id,
 					userId: event.state_key,
-					userDisplayName: event.content.displayname,
+					userDisplayName,
 					time,
 					rejectedByUserId: event.sender,
+					rejectedByUserName: senderName,
 				};
 				return knockRejected;
 			}
@@ -109,7 +112,7 @@ export async function getKnockEvents(
 		})
 		.filter((it) => (it !== undefined));
 
-	return knockEvents;
+	return Promise.all(knockEvents);
 }
 
 
@@ -131,19 +134,21 @@ export async function getChildEvents(
 			.map(async (event) => {
 				const childRoomId = event.state_key;
 				const childRoom = client.getRoom(childRoomId);
+				const childRoomName = childRoom?.name || `(${UNKNOWN})`;
 
 				// @ts-expect-error
 				const userId = event.user_id; // alternatively `sender`
 				const { displayname } = await client.getProfileInfo(userId);
+				const userDisplayName = displayname || `(${UNKNOWN})`;
 
 				const time = new Date(event.origin_server_ts);
 				const childEvent: ChildEvent = {
 					roomId: event.room_id,
 					userId,
-					userDisplayName: displayname,
+					userDisplayName,
 					time,
 					childRoomId,
-					childRoomName: childRoom?.name,
+					childRoomName,
 				};
 				return childEvent;
 			})

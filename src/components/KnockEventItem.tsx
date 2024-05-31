@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 
 import { KnockEvent } from '../types';
 import { formatDate } from '../utils/date';
+import { UNKNOWN } from '../constants';
 
 
 interface KnockEventItemProps {
@@ -13,7 +14,7 @@ interface KnockEventItemProps {
 const KnockEventItem = ({ data, acceptKnock, rejectKnock, }: KnockEventItemProps) => {
 	const { t } = useTranslation();
 
-	const userName = data.userDisplayName || '(UNKNOWN)';
+	const userName = data.userDisplayName || `(${UNKNOWN})`;
 
 	return <div className="KnockEventItem">
 		<div className="metadata">
