@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { Fragment, ReactNode, useCallback, useState } from 'react';
+import { Fragment, ReactNode, useState } from 'react';
 import { ClientEvent, MatrixClient, MatrixError, Room, RoomStateEvent } from 'matrix-js-sdk';
 
 import Login from './Login';
@@ -9,6 +9,7 @@ import { Loading } from './Loading';
 import { determineUserRooms, getChildEvents, getKnockEvents, getPublicRooms } from '../utils/matrix';
 import { AppStatus, ChildEvent, KnockEvent, User } from '../types';
 import { MSG_NOT_A_MODERATOR, projectTitle, roomsToIgnore } from '../constants';
+import LanguageSelector from './LanguageSelector';
 
 
 interface AppProps {
@@ -61,7 +62,7 @@ function App({ client }: AppProps): ReactNode {
 	};
 
 	const updateEventsData = async (moderatorRooms: Room[]) => {
-		console.info('Updating events data...', moderatorRooms);
+		console.info('Updating events data...');
 
 		setIsRefreshing(true); // TODO: keep?
 
@@ -224,6 +225,8 @@ function App({ client }: AppProps): ReactNode {
 					<a href="/" onClick={refresh}>/refresh</a>
 				</div>
 			</div>}
+
+			<LanguageSelector />
 		</nav>
 
 		<main>

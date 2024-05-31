@@ -1,5 +1,6 @@
 import { Fragment } from 'react';
 import { Room } from 'matrix-js-sdk';
+import { useTranslation } from 'react-i18next';
 
 import { ChildEvent, KnockEvent, User } from '../types';
 import { projectTitle } from '../constants';
@@ -30,6 +31,8 @@ function Main({
 	removeChild,
 	isRefreshing,
 }: MainProps) {
+	const { t } = useTranslation();
+
 	return <Fragment>
 		<section className="landing">
 			<p>Hello <strong>{user.displayName}</strong>.</p>
