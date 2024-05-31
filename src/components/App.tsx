@@ -8,7 +8,7 @@ import { Loading } from './Loading';
 
 import { determineUserRooms, getChildEvents, getKnockEvents } from '../utils/matrix';
 import { AppStatus, ChildEvent, KnockEvent, User } from '../types';
-import { MSG_NOT_A_MODERATOR, projectTitle } from '../constants';
+import { MSG_NOT_A_MODERATOR, projectTitle, roomsToIgnore } from '../constants';
 
 
 interface AppProps {
@@ -95,7 +95,9 @@ function App({ client }: AppProps): ReactNode {
 					const listedRoomsIds = roomDirectory.map((it) => it.room_id);
 
 					// get rooms the user is a moderator of
-					const rooms = client.getRooms();
+					const rooms = client.getRooms()
+						// it doesn't make sense to show certain rooms, so we remove them
+						.filter((room) => !roomsToIgnore.includes(room.name));
 					const moderatorRooms = await determineUserRooms(rooms, listedRoomsIds, user_id);
 					setModeratorRooms(moderatorRooms);
 					if (!moderatorRooms.length) {
