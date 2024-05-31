@@ -28,3 +28,10 @@ export type ChildEvent = {
 	childRoomName: string;
 	time: Date;
 }
+
+export type ChildRemovedEvent = ChildEvent & {
+	removedByUserId: string,
+	removedByUserName: string,
+}
+
+export type ChildrenByRoom = Record<string, Array<ChildEvent | ChildRemovedEvent>>

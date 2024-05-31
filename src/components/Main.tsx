@@ -2,18 +2,19 @@ import { Fragment, ReactNode } from 'react';
 import { Room } from 'matrix-js-sdk';
 import { useTranslation } from 'react-i18next';
 
-import { ChildEvent, KnockEvent, KnocksByRoom, User } from '../types';
+import { ChildEvent, ChildrenByRoom, KnockEvent, KnocksByRoom, User } from '../types';
 import KnockEventItem from './KnockEventItem';
 import { Loading } from './Loading';
 import ChildEventItem from './ChildEventItem';
 import KnockRejectedEventItem from './KnockRejectedEventItem';
+import ChildRemovedEventItem from './ChildEventRemovedItem';
 
 
 interface MainProps {
 	user: User,
 	isRefreshing: boolean,
 	moderatorRooms: Room[],
-	childrenByRoom: Record<string, ChildEvent[]>,
+	childrenByRoom: ChildrenByRoom,
 	knocksByRoom: KnocksByRoom,
 	acceptKnock: (item: KnockEvent) => Promise<void>,
 	rejectKnock: (item: KnockEvent) => Promise<void>,
@@ -75,11 +76,19 @@ function Main({
 					? <span className="disabled">({t('EMPTY')})</span>
 					: <ul>
 						{children.map((item) => {
-							return <li key={item.childRoomId}>
-								<ChildEventItem
+							let content: ReactNode = null;
+							if ('removedByUserName' in item) {
+								content = <ChildRemovedEventItem
+									data={item}
+								/>;
+							} else {
+								content = <ChildEventItem
 									data={item}
 									removeChild={removeChild}
-								/>
+								/>;
+							}
+							return <li key={item.childRoomId}>
+								{content}
 							</li>;
 						})}
 					</ul>

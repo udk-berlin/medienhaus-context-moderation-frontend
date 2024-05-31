@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { EventTimeline, MatrixClient, Room } from 'matrix-js-sdk';
-import { ChildEvent, KnockEvent, KnockRejectedEvent } from '../types';
+import { ChildEvent, ChildRemovedEvent, KnockEvent, KnockRejectedEvent } from '../types';
 import { KnownMembership } from 'matrix-js-sdk/lib/types';
 import { UNKNOWN } from '../constants';
 
@@ -74,16 +74,19 @@ export async function getKnockEvents(
 		)
 		.map(async (event) => {
 			const time = new Date(event.origin_server_ts);
+			const userDisplayName = event.content.displayname || `(${UNKNOWN})`;
+			const common: Pick<KnockEvent, 'roomId' | 'userId' | 'userDisplayName' | 'time'> = {
+				roomId: event.room_id,
+				userId: event.state_key,
+				userDisplayName,
+				time
+			};
 
 			// user knocked
 			if (event.content.membership === KnownMembership.Knock) {
-				const userDisplayName = event.content.displayname || `(${UNKNOWN})`;
 				const knock: KnockEvent = {
-					roomId: event.room_id,
-					userId: event.state_key,
-					userDisplayName,
+					...common,
 					reason: event.content.reason as (string | undefined),
-					time
 				};
 				return knock;
 			}
@@ -96,12 +99,8 @@ export async function getKnockEvents(
 				const senderName = (
 					await client.getProfileInfo(event.sender)
 				).displayname || `(${UNKNOWN})`;
-				const userDisplayName = event.content.displayname || `(${UNKNOWN})`;
 				const knockRejected: KnockRejectedEvent = {
-					roomId: event.room_id,
-					userId: event.state_key,
-					userDisplayName,
-					time,
+					...common,
 					rejectedByUserId: event.sender,
 					rejectedByUserName: senderName,
 				};
@@ -112,7 +111,7 @@ export async function getKnockEvents(
 		})
 		.filter((it) => (it !== undefined));
 
-	return Promise.all(knockEvents);
+	return (await Promise.all(knockEvents)).reverse();
 }
 
 
@@ -121,38 +120,66 @@ export async function getChildEvents(
 	roomId: string,
 ) {
 	const stateEvents = await client.roomState(roomId);
-	const childEvents: ChildEvent[] = await Promise.all(
-		stateEvents
-			.filter((event) => {
-				const { content, type } = event;
-				return (
-					type === 'm.space.child' &&
-					Object.keys(content || {}).length > 0 // 'add' events only
-					// TODO: should we also show 'remove' events?
-				);
-			})
-			.map(async (event) => {
-				const childRoomId = event.state_key;
-				const childRoom = client.getRoom(childRoomId);
-				const childRoomName = childRoom?.name || `(${UNKNOWN})`;
+	const childEvents: Array<Promise<ChildEvent | ChildRemovedEvent>> = stateEvents
+		.filter((event) => {
+			const { type } = event;
+			return (type === 'm.space.child');
+		})
+		.map(async (event) => {
+			const { content } = event;
+			const wasAdded = Object.keys(content || {}).length > 0;
 
-				// @ts-expect-error
-				const userId = event.user_id; // alternatively `sender`
-				const { displayname } = await client.getProfileInfo(userId);
-				const userDisplayName = displayname || `(${UNKNOWN})`;
+			const childRoomId = event.state_key;
+			const childRoom = client.getRoom(childRoomId);
+			const childRoomName = childRoom?.name || `(${UNKNOWN})`;
 
-				const time = new Date(event.origin_server_ts);
-				const childEvent: ChildEvent = {
-					roomId: event.room_id,
-					userId,
-					userDisplayName,
-					time,
-					childRoomId,
-					childRoomName,
+			const senderName = (
+				await client.getProfileInfo(event.sender)
+			).displayname || `(${UNKNOWN})`;
+
+			const time = new Date(event.origin_server_ts);
+			const common = {
+				time,
+				roomId: event.room_id,
+				childRoomId,
+				childRoomName,
+			};
+
+			if (wasAdded) {
+				const childAdded: ChildEvent = {
+					...common,
+					userId: event.sender,
+					userDisplayName: senderName,
 				};
-				return childEvent;
-			})
-	);
+				return childAdded;
+			} else {
+				const prevSender = event.unsigned?.prev_sender;
 
-	return childEvents;
+				if (prevSender === event.sender) {
+					// removed by the same user
+					return undefined as unknown as (ChildEvent | ChildRemovedEvent);
+				}
+
+				let prevSenderName = `(${UNKNOWN})`;
+				if (prevSender) {
+					prevSenderName = (
+						await client.getProfileInfo(prevSender)
+					).displayname || `(${UNKNOWN})`;
+				}
+				const senderName = (
+					await client.getProfileInfo(event.sender)
+				).displayname || `(${UNKNOWN})`;
+				const childRemoved: ChildRemovedEvent = {
+					...common,
+					userId: prevSender as string,
+					userDisplayName: prevSenderName,
+					removedByUserId: event.sender,
+					removedByUserName: senderName
+				};
+				return childRemoved;
+			}
+		})
+		.filter((it) => (it !== undefined));
+
+	return (await Promise.all(childEvents)).reverse();
 }
