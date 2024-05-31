@@ -66,7 +66,7 @@ function Main({
 						? <span className="disabled">(No children)</span>
 						: <ul>
 							{children.map((item) => {
-								return <li key={item.userId}>
+								return <li key={item.childRoomId}>
 									<ChildEventItem
 										data={item}
 										removeChild={removeChild}
