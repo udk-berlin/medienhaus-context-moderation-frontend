@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { Fragment, ReactNode, useState } from 'react';
+import { Fragment, ReactNode, useEffect, useState } from 'react';
 import { ClientEvent, MatrixClient, MatrixError, Room, RoomStateEvent } from 'matrix-js-sdk';
 import { useTranslation } from 'react-i18next';
 
@@ -9,7 +9,7 @@ import { Loading } from './Loading';
 
 import { determineUserRooms, getChildEvents, getKnockEvents, getPublicRooms } from '../utils/matrix';
 import { AppStatus, ChildEvent, KnockEvent, User } from '../types';
-import { projectTitle, roomsToIgnore } from '../constants';
+import { projectTitle, roomsToIgnore, lsAccessToken, lsUserId } from '../constants';
 import LanguageSelector from './LanguageSelector';
 
 
@@ -28,6 +28,77 @@ function App({ client }: AppProps): ReactNode {
 	const [moderatorRooms, setModeratorRooms] = useState<Room[]>([]);
 	const [knocksByRoom, setKnocksByRoom] = useState<Record<string, KnockEvent[]>>({});
 	const [childrenByRoom, setChildrenByRoom] = useState<Record<string, ChildEvent[]>>({});
+
+	const start = async (userId: string) => {
+		// set user info
+		const { displayname } = await client.getProfileInfo(userId);
+		setUser({
+			userId,
+			displayName: displayname
+		});
+
+		client.once(ClientEvent.Sync, async (state: string) => {
+			if (state === 'PREPARED') {
+				console.log('Sync complete');
+
+				let moderatorRooms = await updateModeratorRooms();
+
+				// listen to events so that we can refresh the data accordingly
+				client.on(RoomStateEvent.Members, async (_event, _state, member) => {
+					if (member.userId === client.getUserId()) {
+						// the user's membership changed
+						moderatorRooms = await updateModeratorRooms();
+					} else {
+						// someone else's membership changed
+						updateEventsData(moderatorRooms);
+					}
+				});
+				client.on(RoomStateEvent.Events, async (event) => {
+					const type = event.getType();
+					if (type === 'm.room.power_levels') {
+						const content = event.getContent();
+						const userId = client.getUserId()!;
+						const newPowerLevel = content.users[userId];
+						if (newPowerLevel !== undefined) {
+							// the user's power level changed
+							moderatorRooms = await updateModeratorRooms();
+						}
+					} else if (type === 'm.space.child') {
+						// connected rooms changed
+						updateEventsData(moderatorRooms);
+					}
+				});
+			} else {
+				console.error('Sync failed!');
+			}
+		});
+
+		setStatus('initial-sync');
+		client.startClient();
+	};
+
+	useEffect(
+		() => {
+			// check for credentials in localstorage
+			const userId = localStorage.getItem(lsUserId);
+			const token = localStorage.getItem(lsAccessToken);
+			if (token && userId) {
+				(async () => {
+					try {
+						client.credentials = { userId };
+						client.setAccessToken(token);
+						setStatus('logged-in');
+						start(userId);
+					} catch (err) {
+						console.log('Failed to auto-login');
+						console.error(err);
+						logout();
+					}
+				})();
+			}
+		},
+		[]
+	);
 
 	const updateModeratorRooms = async () => {
 		console.info('Updating rooms data...');
@@ -115,56 +186,12 @@ function App({ client }: AppProps): ReactNode {
 		setLoginErrors([]);
 
 		try {
-			const res = await client.loginWithPassword(user, password);
-			const { access_token, user_id } = res;
+			const { access_token, user_id } = await client.loginWithPassword(user, password);
 			client.setAccessToken(access_token);
+			localStorage.setItem(lsAccessToken, access_token);
+			localStorage.setItem(lsUserId, user_id);
 			setStatus('logged-in');
-
-			client.once(ClientEvent.Sync, async (state: string) => {
-				if (state === 'PREPARED') {
-					console.log('Sync complete');
-
-					// set user info
-					const { displayname } = await client.getProfileInfo(user_id);
-					setUser({
-						userId: user_id,
-						displayName: displayname
-					});
-
-					let moderatorRooms = await updateModeratorRooms();
-
-					// listen to events so that we can refresh the data accordingly
-					client.on(RoomStateEvent.Members, async (_event, _state, member) => {
-						if (member.userId === client.getUserId()) {
-							// the user's membership changed
-							moderatorRooms = await updateModeratorRooms();
-						} else {
-							// someone else's membership changed
-							updateEventsData(moderatorRooms);
-						}
-					});
-					client.on(RoomStateEvent.Events, async (event) => {
-						const type = event.getType();
-						if (type === 'm.room.power_levels') {
-							const content = event.getContent();
-							const userId = client.getUserId()!;
-							const newPowerLevel = content.users[userId];
-							if (newPowerLevel !== undefined) {
-								// the user's power level changed
-								moderatorRooms = await updateModeratorRooms();
-							}
-						} else if (type === 'm.space.child') {
-							// connected rooms changed
-							updateEventsData(moderatorRooms);
-						}
-					});
-				} else {
-					console.error('Sync failed!');
-				}
-			});
-
-			setStatus('initial-sync');
-			client.startClient();
+			start(user_id);
 		} catch (err) {
 			if (err instanceof MatrixError) {
 				console.error('Login failed:', err.data.error);
@@ -174,10 +201,11 @@ function App({ client }: AppProps): ReactNode {
 		}
 	};
 
-	const logout: React.MouseEventHandler<HTMLElement> = async (event) => {
-		event.preventDefault();
+	const logout = async () => {
 		setStatus('logged-out');
 		setUser(null);
+		localStorage.removeItem(lsAccessToken);
+		localStorage.removeItem(lsUserId);
 		await client.logout(true);
 		client.stopClient();
 	};
@@ -222,7 +250,12 @@ function App({ client }: AppProps): ReactNode {
 		<nav>
 			{(status !== 'logged-out') && <div>
 				<div>
-					<a href="/" onClick={logout}>/logout</a>
+					<a href="/" onClick={(event) => {
+						event.preventDefault();
+						logout();
+					}}>
+						/logout
+					</a>
 				</div>
 				<div>
 					<a href="/" onClick={refresh}>/refresh</a>
