@@ -1,11 +1,12 @@
-import { Fragment } from 'react';
+import { Fragment, ReactNode } from 'react';
 import { Room } from 'matrix-js-sdk';
 import { useTranslation } from 'react-i18next';
 
-import { ChildEvent, KnockEvent, User } from '../types';
+import { ChildEvent, KnockEvent, KnockRejectedEvent, KnocksByRoom, User } from '../types';
 import KnockEventItem from './KnockEventItem';
 import { Loading } from './Loading';
 import ChildEventItem from './ChildEventItem';
+import KnockRejectedEventItem from './KnockRejectedEventItem';
 
 
 interface MainProps {
@@ -13,7 +14,7 @@ interface MainProps {
 	isRefreshing: boolean,
 	moderatorRooms: Room[],
 	childrenByRoom: Record<string, ChildEvent[]>,
-	knocksByRoom: Record<string, KnockEvent[]>,
+	knocksByRoom: KnocksByRoom,
 	acceptKnock: (item: KnockEvent) => Promise<void>,
 	rejectKnock: (item: KnockEvent) => Promise<void>,
 	removeChild: (item: ChildEvent) => Promise<void>,
@@ -43,6 +44,7 @@ function Main({
 		{(isRefreshing) ? <Loading /> : moderatorRooms.map((room) => {
 			const knocks = knocksByRoom[room.roomId] || [];
 			const children = childrenByRoom[room.roomId] || [];
+
 			return <section className="section" key={room.roomId}>
 				<h3>{room.name}</h3>
 				<h4>{t('USERS_WANTING_TO_JOIN')}:</h4>
@@ -50,12 +52,20 @@ function Main({
 					? <span className="disabled">({t('EMPTY')})</span>
 					: <ul>
 						{knocks.map((item) => {
-							return <li key={item.userId}>
-								<KnockEventItem
+							let content: ReactNode = null;
+							if ((item as KnockRejectedEvent).rejectedByUserId) {
+								content = <KnockRejectedEventItem
+									data={item}
+								/>;
+							} else {
+								content = <KnockEventItem
 									data={item}
 									acceptKnock={acceptKnock}
 									rejectKnock={rejectKnock}
-								/>
+								/>;
+							}
+							return <li key={item.userId}>
+								{content}
 							</li>;
 						})}
 					</ul>

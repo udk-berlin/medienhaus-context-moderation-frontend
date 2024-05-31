@@ -13,6 +13,12 @@ export type KnockEvent = {
 	time: Date;
 }
 
+export type KnockRejectedEvent = KnockEvent & {
+	rejectedByUserId: string,
+}
+
+export type KnocksByRoom = Record<string, Array<KnockEvent | KnockRejectedEvent>>
+
 export type ChildEvent = {
 	roomId: string;
 	userId: string;

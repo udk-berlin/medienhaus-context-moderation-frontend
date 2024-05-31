@@ -9,7 +9,7 @@ import { Loading } from './Loading';
 import LanguageSelector from './LanguageSelector';
 
 import { determineUserRooms, getChildEvents, getKnockEvents, getPublicRooms } from '../utils/matrix';
-import { AppStatus, ChildEvent, KnockEvent, User } from '../types';
+import { AppStatus, ChildEvent, KnockEvent, KnocksByRoom, User } from '../types';
 import { projectTitle, roomsToIgnore, lsAccessToken, lsUserId } from '../constants';
 
 
@@ -26,7 +26,7 @@ function App({ client }: AppProps): ReactNode {
 	const [status, setStatus] = useState<AppStatus>('logged-out');
 	const [isRefreshing, setIsRefreshing] = useState(false);
 	const [moderatorRooms, setModeratorRooms] = useState<Room[]>([]);
-	const [knocksByRoom, setKnocksByRoom] = useState<Record<string, KnockEvent[]>>({});
+	const [knocksByRoom, setKnocksByRoom] = useState<KnocksByRoom>({});
 	const [childrenByRoom, setChildrenByRoom] = useState<Record<string, ChildEvent[]>>({});
 
 	const start = async (userId: string) => {
@@ -141,7 +141,7 @@ function App({ client }: AppProps): ReactNode {
 
 		setIsRefreshing(true);
 
-		const knocksByRoom: Record<string, KnockEvent[]> = {};
+		const knocksByRoom: KnocksByRoom = {};
 		const childrenByRoom: Record<string, ChildEvent[]> = {};
 		for (const room of moderatorRooms) {
 			knocksByRoom[room.roomId] = await getKnockEvents(client, room.roomId);

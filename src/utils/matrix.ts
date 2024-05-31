@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { EventTimeline, MatrixClient, Room } from 'matrix-js-sdk';
-import { ChildEvent, KnockEvent } from '../types';
+import { ChildEvent, KnockEvent, KnockRejectedEvent } from '../types';
+import { KnownMembership } from 'matrix-js-sdk/lib/types';
 
 
 export async function getPublicRooms(client: MatrixClient) {
@@ -61,23 +62,52 @@ export async function getKnockEvents(
 	roomId: string,
 ) {
 	const stateEvents = await client.roomState(roomId);
-	const knockEvents: KnockEvent[] = stateEvents
+
+	// ban | invite | join | knock | leave
+	const membershipTypes = [KnownMembership.Knock, KnownMembership.Leave];
+
+	const knockEvents: Array<KnockEvent | KnockRejectedEvent> = stateEvents
 		.filter((event) =>
 			event.type === 'm.room.member' &&
-			event.content.membership === 'knock'
+			membershipTypes.includes(event.content.membership as KnownMembership)
 		)
 		.map((event) => {
+			console.log(event.content.membership, event.state_key, event);
+			return event;
+		})
+		.map((event) => {
 			const time = new Date(event.origin_server_ts);
-			const knock: KnockEvent = {
-				roomId: event.room_id,
-				// @ts-expect-error
-				userId: event.user_id, // alternatively `sender` or `state_key`
-				userDisplayName: event.content.displayname,
-				reason: event.content.reason as (string | undefined),
-				time
-			};
-			return knock;
-		});
+
+			// user knocked
+			if (event.content.membership === KnownMembership.Leave) {
+				const knock: KnockEvent = {
+					roomId: event.room_id,
+					userId: event.state_key,
+					userDisplayName: event.content.displayname,
+					reason: event.content.reason as (string | undefined),
+					time
+				};
+				return knock;
+			}
+
+			// user's knock was rejected
+			if (
+				event.content.membership === KnownMembership.Leave &&
+				event.sender !== event.state_key
+			) {
+				const knockRejected: KnockRejectedEvent = {
+					roomId: event.room_id,
+					userId: event.state_key,
+					userDisplayName: event.content.displayname,
+					time,
+					rejectedByUserId: event.sender,
+				};
+				return knockRejected;
+			}
+
+			return undefined as unknown as (KnockEvent | KnockRejectedEvent);
+		})
+		.filter((it) => (it !== undefined));
 
 	return knockEvents;
 }

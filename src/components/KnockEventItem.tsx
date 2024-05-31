@@ -13,9 +13,11 @@ interface KnockEventItemProps {
 const KnockEventItem = ({ data, acceptKnock, rejectKnock, }: KnockEventItemProps) => {
 	const { t } = useTranslation();
 
+	const userName = data.userDisplayName || '(UNKNOWN)';
+
 	return <div className="KnockEventItem">
 		<div className="metadata">
-			<div><strong>{data.userDisplayName}</strong> {t('WANTS_TO_JOIN')}</div>
+			<div><strong>{userName}</strong> {t('WANTS_TO_JOIN')}</div>
 			<div>{formatDate(data.time)}</div>
 			{data.reason && <div>{t('MESSAGE')}: {data.reason}</div>}
 		</div>
