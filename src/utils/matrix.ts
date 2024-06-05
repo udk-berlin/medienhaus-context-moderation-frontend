@@ -108,10 +108,11 @@ export async function getKnockEvents(
 			}
 
 			return undefined as unknown as (KnockEvent | KnockRejectedEvent);
-		})
-		.filter((it) => (it !== undefined));
+		});
 
-	return (await Promise.all(knockEvents)).reverse();
+	return (await Promise.all(knockEvents))
+		.filter((it) => (it !== undefined))
+		.reverse();
 }
 
 
@@ -178,8 +179,9 @@ export async function getChildEvents(
 				};
 				return childRemoved;
 			}
-		})
-		.filter((it) => (it !== undefined));
+		});
 
-	return (await Promise.all(childEvents)).reverse();
+	return (await Promise.all(childEvents))
+		.filter((it) => (it !== undefined))
+		.reverse();
 }
