@@ -50,7 +50,7 @@ function Main({
 				<h3>{room.name}</h3>
 				<h4>{t('USERS_WANTING_TO_JOIN')}:</h4>
 				{(!knocks.length)
-					? <span className="disabled">({t('EMPTY')})</span>
+					? <span className="disabled">({t('NONE')})</span>
 					: <ul>
 						{knocks.map((item) => {
 							let content: ReactNode = null;
@@ -73,7 +73,7 @@ function Main({
 				}
 				<h4>{t('CONNECTED_ROOMS')}:</h4>
 				{(!children.length)
-					? <span className="disabled">({t('EMPTY')})</span>
+					? <span className="disabled">({t('NONE')})</span>
 					: <ul>
 						{children.map((item) => {
 							let content: ReactNode = null;
