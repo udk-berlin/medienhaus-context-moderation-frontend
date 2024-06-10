@@ -31,6 +31,7 @@ export async function determineUserRooms(
 		// deprecated
 		// const powerLevels = room.currentState.getStateEvents('m.room.power_levels', '');
 		const currentState = room.getLiveTimeline().getState(EventTimeline.FORWARDS);
+		const moderatorLevel = 50; // assume default value
 		if (!currentState) {
 			console.error('Unable to get state for room: ' + room.name);
 			return;
@@ -47,7 +48,6 @@ export async function determineUserRooms(
 				console.error('Unable to determine user power level in room: ' + room.name);
 				return;
 			}
-			const moderatorLevel = 50; // TODO: or does medienhaus use a non-default value?
 			if (userPowerLevel >= moderatorLevel) {
 				moderatorRooms.push(room);
 			}
