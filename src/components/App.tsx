@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { Fragment, ReactNode, useEffect, useState } from 'react';
-import { ClientEvent, MatrixClient, MatrixError, Room, RoomStateEvent } from 'matrix-js-sdk';
+import { ClientEvent, MatrixClient, MatrixError, Room, RoomStateEvent, SyncState } from 'matrix-js-sdk';
 import { useTranslation } from 'react-i18next';
 
 import Login from './Login';
@@ -38,7 +38,7 @@ function App({ client }: AppProps): ReactNode {
 		});
 
 		client.once(ClientEvent.Sync, async (state: string) => {
-			if (state === 'PREPARED') {
+			if (state === SyncState.Prepared) {
 				console.log('Sync complete');
 
 				let moderatorRooms = await updateModeratorRooms();
