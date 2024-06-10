@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { EventTimeline, IPublicRoomsChunkRoom, MatrixClient, Room } from 'matrix-js-sdk';
 import { ChildEvent, ChildRemovedEvent, KnockEvent, KnockRejectedEvent } from '../types';
 import { KnownMembership } from 'matrix-js-sdk/lib/types';

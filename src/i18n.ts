@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
@@ -9,13 +8,12 @@ import { lsLang } from './constants';
 const defaultLang = 'en';
 let lang: string;
 if (localStorage.getItem(lsLang) !== null) {
-	// @ts-expect-error
-	lang = localStorage.getItem(lsLang);
-	if (!lang) {
+	const storedLang = localStorage.getItem(lsLang);
+	if (!storedLang) {
 		lang = defaultLang;
 	}
 } else {
-	lang = 'en';
+	lang = defaultLang;
 }
 
 export function init() {
