@@ -8,7 +8,7 @@ import Main from './Main';
 import { Loading } from './Loading';
 import LanguageSelector from './LanguageSelector';
 
-import { determineUserRooms, getChildEvents, getKnockEvents, getPublicRooms } from '../utils/matrix';
+import { determineModeratedRooms, getChildEvents, getKnockEvents, getPublicRooms } from '../utils/matrix';
 import { AppStatus, ChildEvent, ChildrenByRoom, KnockEvent, KnocksByRoom, User } from '../types';
 import { projectTitle, roomsToIgnore, lsAccessToken, lsUserId } from '../constants';
 
@@ -121,7 +121,7 @@ function App({ client }: AppProps): ReactNode {
 		const rooms = client.getRooms()
 			// it doesn't make sense to show certain rooms, so we remove them
 			.filter((room) => !roomsToIgnore.includes(room.name));
-		const moderatorRooms = await determineUserRooms(rooms, listedRoomsIds, userId);
+		const moderatorRooms = await determineModeratedRooms(rooms, listedRoomsIds, userId);
 		setModeratorRooms(moderatorRooms);
 
 		if (!moderatorRooms.length) {

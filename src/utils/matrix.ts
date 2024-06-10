@@ -1,19 +1,23 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { EventTimeline, MatrixClient, Room } from 'matrix-js-sdk';
+import { EventTimeline, IPublicRoomsChunkRoom, MatrixClient, Room } from 'matrix-js-sdk';
 import { ChildEvent, ChildRemovedEvent, KnockEvent, KnockRejectedEvent } from '../types';
 import { KnownMembership } from 'matrix-js-sdk/lib/types';
 import { UNKNOWN } from '../constants';
 
 
 export async function getPublicRooms(client: MatrixClient) {
-	const roomDirectory = (
-		await client.publicRooms({ limit: 99999 })
-	).chunk;
-	return roomDirectory;
+	let chunks: IPublicRoomsChunkRoom[] = [];
+	let paginationToken: string | undefined;
+	do {
+		const { chunk, next_batch } = await client.publicRooms({ since: paginationToken });
+		chunks = chunks.concat(chunk);
+		paginationToken = next_batch;
+	} while (paginationToken);
+	return chunks;
 }
 
 
-export async function determineUserRooms(
+export async function determineModeratedRooms(
 	rooms: Room[],
 	listedRoomsIds: string[],
 	user_id: string
