@@ -1,6 +1,5 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { Fragment, ReactNode, useEffect, useState } from 'react';
-import { ClientEvent, MatrixClient, MatrixError, Room, RoomStateEvent, SyncState } from 'matrix-js-sdk';
+import { ClientEvent, EventType, MatrixClient, MatrixError, Room, RoomStateEvent, SyncState } from 'matrix-js-sdk';
 import { useTranslation } from 'react-i18next';
 
 import Login from './Login';
@@ -169,8 +168,7 @@ function App({ client }: AppProps): ReactNode {
 		try {
 			await client.sendStateEvent(
 				spaceId,
-				// @ts-expect-error
-				'm.space.child',
+				EventType.SpaceChild,
 				{}, // empty content to remove the room from the space
 				childRoomId
 			);
