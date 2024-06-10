@@ -9,7 +9,7 @@ import LanguageSelector from './LanguageSelector';
 
 import { determineModeratedRooms, getChildEvents, getKnockEvents, getPublicRooms } from '../utils/matrix';
 import { AppStatus, ChildEvent, ChildrenByRoom, KnockEvent, KnocksByRoom, User } from '../types';
-import { projectTitle, roomsToIgnore, lsAccessToken, lsUserId } from '../constants';
+import { projectTitle, lsAccessToken, lsUserId } from '../constants';
 
 
 interface AppProps {
@@ -112,14 +112,20 @@ function App({ client }: AppProps): ReactNode {
 
 		setIsRefreshing(true);
 
-		// get public rooms
 		const roomDirectory = await getPublicRooms(client);
 		const listedRoomsIds = roomDirectory.map((it) => it.room_id);
 
 		// get rooms the user is a moderator of
 		const rooms = client.getRooms()
-			// it doesn't make sense to show certain rooms, so we remove them
-			.filter((room) => !roomsToIgnore.includes(room.name));
+			.filter((room) => {
+				// when user is the only current member: ignore
+				// for moderated spaces there will be at least one other member: a bot
+				const memberIds = Object.keys(room.currentState.members);
+				if (memberIds.length === 1 && memberIds[0] === userId) {
+					return false;
+				}
+				return true;
+			});
 		const moderatorRooms = await determineModeratedRooms(rooms, listedRoomsIds, userId);
 		setModeratorRooms(moderatorRooms);
 
