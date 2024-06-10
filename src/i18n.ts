@@ -5,12 +5,16 @@ import { resource } from './translations';
 import { lsLang } from './constants';
 
 
+const supportedLangs = ['en', 'de'];
 const defaultLang = 'en';
+
 let lang: string;
 if (localStorage.getItem(lsLang) !== null) {
 	const storedLang = localStorage.getItem(lsLang);
 	if (!storedLang) {
 		lang = defaultLang;
+	} else {
+		lang = storedLang;
 	}
 } else {
 	lang = defaultLang;
@@ -22,7 +26,7 @@ export function init() {
 		// for all options read: https://www.i18next.com/overview/configuration-options
 		.init({
 			resources: resource,
-			supportedLngs: ['en', 'de'],
+			supportedLngs: supportedLangs,
 			lng: lang,
 			// nsSeparator: false,
 			// keySeparator: false,
