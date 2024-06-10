@@ -118,6 +118,13 @@ function App({ client }: AppProps): ReactNode {
 		// get rooms the user is a moderator of
 		const rooms = client.getRooms()
 			.filter((room) => {
+				// not a public room: ignore
+				if (!listedRoomsIds.includes(room.roomId)) {
+					return false;
+				}
+				return true;
+			})
+			.filter((room) => {
 				// when user is the only current member: ignore
 				// for moderated spaces there will be at least one other member: a bot
 				const memberIds = Object.keys(room.currentState.members);
@@ -126,7 +133,7 @@ function App({ client }: AppProps): ReactNode {
 				}
 				return true;
 			});
-		const moderatorRooms = await determineModeratedRooms(rooms, listedRoomsIds, userId);
+		const moderatorRooms = await determineModeratedRooms(rooms, userId);
 		setModeratorRooms(moderatorRooms);
 
 		if (!moderatorRooms.length) {

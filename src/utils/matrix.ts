@@ -19,19 +19,11 @@ export async function getPublicRooms(client: MatrixClient) {
 
 export async function determineModeratedRooms(
 	rooms: Room[],
-	listedRoomsIds: string[],
 	user_id: string
 ) {
 	const moderatorRooms: Room[] = [];
 
 	rooms.forEach((room) => {
-		// only handle listed rooms
-		// TODO: keep this?
-		if (!listedRoomsIds.includes(room.roomId)) {
-			// ignore
-			return;
-		}
-
 		// deprecated
 		// const powerLevels = room.currentState.getStateEvents('m.room.power_levels', '');
 		const currentState = room.getLiveTimeline().getState(EventTimeline.FORWARDS);
