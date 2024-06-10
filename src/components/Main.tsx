@@ -42,7 +42,10 @@ function Main({
 			{t('SPACES_YOU_ARE_MOD_OF')}:
 		</section>
 
-		{(isRefreshing) ? <Loading /> : moderatorRooms.map((room) => {
+		{(isRefreshing) ? <Fragment>
+			<br />
+			<Loading />
+		</Fragment> : moderatorRooms.map((room) => {
 			const knocks = knocksByRoom[room.roomId] || [];
 			const children = childrenByRoom[room.roomId] || [];
 
