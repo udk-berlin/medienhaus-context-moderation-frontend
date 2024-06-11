@@ -82,10 +82,15 @@ export async function getKnockEvents(
 		)
 		.map(async (event) => {
 			const time = new Date(event.origin_server_ts);
-			const userDisplayName = event.content.displayname || `(${UNKNOWN})`;
+
+			const userId = event.state_key;
+			const userDisplayName = (
+				await client.getProfileInfo(userId, 'displayname')
+			).displayname || `(${UNKNOWN})`;
+
 			const common: Pick<KnockEvent, 'roomId' | 'userId' | 'userDisplayName' | 'time'> = {
 				roomId: event.room_id,
-				userId: event.state_key,
+				userId,
 				userDisplayName,
 				time
 			};
@@ -105,8 +110,9 @@ export async function getKnockEvents(
 				event.sender !== event.state_key
 			) {
 				const senderName = (
-					await client.getProfileInfo(event.sender)
+					await client.getProfileInfo(event.sender, 'displayname')
 				).displayname || `(${UNKNOWN})`;
+
 				const knockRejected: KnockRejectedEvent = {
 					...common,
 					rejectedByUserId: event.sender,
