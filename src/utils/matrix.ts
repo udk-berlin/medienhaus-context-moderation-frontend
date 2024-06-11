@@ -16,6 +16,19 @@ export async function getPublicRooms(client: MatrixClient) {
 }
 
 
+export async function getRoomName(client: MatrixClient, roomId: string) {
+	try {
+		const { name } = await client.getStateEvent(roomId, 'm.room.name', '');
+		if (name) {
+			return name;
+		}
+	} catch (err) {
+		console.error(err);
+	}
+	return null;
+}
+
+
 export async function determineModeratedRooms(
 	rooms: Room[],
 	user_id: string
@@ -126,8 +139,10 @@ export async function getChildEvents(
 			const wasAdded = Object.keys(content || {}).length > 0;
 
 			const childRoomId = event.state_key;
-			const childRoom = client.getRoom(childRoomId);
-			const childRoomName = childRoom?.name || `(${UNKNOWN})`;
+
+			const childRoomName = (
+				await getRoomName(client, childRoomId)
+			) || `(${UNKNOWN})`;
 
 			const senderName = (
 				await client.getProfileInfo(event.sender)
