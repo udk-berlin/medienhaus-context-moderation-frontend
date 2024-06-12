@@ -6,6 +6,8 @@
 	text-rendering: optimizeLegibility;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
+
+	--disabled-color: grey;
 }
 
 * {
@@ -18,7 +20,7 @@
 }
 
 .disabled {
-	color: grey;
+	color: var(--disabled-color);
 }
 
 .KnockEventItem,
@@ -39,4 +41,13 @@
 
 main > .section {
 	margin-top: 5rem !important;
+}
+
+summary > h4 {
+	display: inline-block;
+	user-select: none;
+	cursor: pointer;
+}
+summary .count {
+	color: var(--disabled-color);
 }
