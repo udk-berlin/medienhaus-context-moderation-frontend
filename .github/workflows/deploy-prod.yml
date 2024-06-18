@@ -21,6 +21,7 @@ jobs:
       ssh_host: 'cms-mail-notification-frontend.rundgang.udk-berlin.de'
       ssh_key: ${{ secrets.SSH_RUNDGANG_UDK_BERLIN_DE }}
       vite_matrix_server_url: ${{ secrets.VITE_MATRIX_SERVER_URL }}
+      vite_max_room_age_days: ${{ secrets.VITE_MAX_ROOM_AGE_DAYS }}
 
     steps:
       - uses: actions/checkout@v4
