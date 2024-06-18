@@ -1,19 +1,7 @@
-import { EventTimeline, IPublicRoomsChunkRoom, MatrixClient, Room } from 'matrix-js-sdk';
+import { EventTimeline, MatrixClient, Room } from 'matrix-js-sdk';
 import { ChildEvent, ChildRemovedEvent, KnockEvent, KnockRejectedEvent } from '../types';
 import { KnownMembership } from 'matrix-js-sdk/lib/types';
 import { UNKNOWN } from '../constants';
-
-
-export async function getPublicRooms(client: MatrixClient) {
-	let chunks: IPublicRoomsChunkRoom[] = [];
-	let paginationToken: string | undefined;
-	do {
-		const { chunk, next_batch } = await client.publicRooms({ since: paginationToken });
-		chunks = chunks.concat(chunk);
-		paginationToken = next_batch;
-	} while (paginationToken);
-	return chunks;
-}
 
 
 export async function getRoomName(client: MatrixClient, roomId: string) {

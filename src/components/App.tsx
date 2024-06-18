@@ -7,7 +7,7 @@ import Main from './Main';
 import { Loading } from './Loading';
 import LanguageSelector from './LanguageSelector';
 
-import { determineModeratedRooms, getChildEvents, getKnockEvents, getPublicRooms } from '../utils/matrix';
+import { determineModeratedRooms, getChildEvents, getKnockEvents } from '../utils/matrix';
 import { AppStatus, ChildEvent, ChildrenByRoom, KnockEvent, KnocksByRoom, User } from '../types';
 import { projectTitle, lsAccessToken, lsUserId } from '../constants';
 
@@ -112,18 +112,8 @@ function App({ client }: AppProps): ReactNode {
 
 		setIsRefreshing(true);
 
-		const roomDirectory = await getPublicRooms(client);
-		const listedRoomsIds = roomDirectory.map((it) => it.room_id);
-
 		// get rooms the user is a moderator of
 		const rooms = client.getRooms()
-			.filter((room) => {
-				// not a public room: ignore
-				if (!listedRoomsIds.includes(room.roomId)) {
-					return false;
-				}
-				return true;
-			})
 			.filter((room) => {
 				// when user is the only current member: ignore
 				// for moderated spaces there will be at least one other member: a bot
