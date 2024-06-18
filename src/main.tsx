@@ -9,6 +9,7 @@ import './index.css';
 
 console.log('CONFIGURATION --------');
 console.log(`Matrix server: ${import.meta.env.VITE_MATRIX_SERVER_URL}`);
+console.log(`Max room age: ${import.meta.env.VITE_MAX_ROOM_AGE_DAYS}`);
 console.log('----------------------');
 
 const client = sdk.createClient({

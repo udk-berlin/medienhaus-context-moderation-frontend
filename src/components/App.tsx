@@ -10,6 +10,7 @@ import LanguageSelector from './LanguageSelector';
 import { determineModeratedRooms, getChildEvents, getKnockEvents } from '../utils/matrix';
 import { AppStatus, ChildEvent, ChildrenByRoom, KnockEvent, KnocksByRoom, User } from '../types';
 import { projectTitle, lsAccessToken, lsUserId } from '../constants';
+import { getDifferenceInDays } from '../utils/date';
 
 
 interface AppProps {
@@ -112,7 +113,14 @@ function App({ client }: AppProps): ReactNode {
 
 		setIsRefreshing(true);
 
-		// get rooms the user is a moderator of
+		// filter rooms
+		let maxRoomAgeInDays = -1;
+		try {
+			maxRoomAgeInDays = parseInt(import.meta.env.VITE_MAX_ROOM_AGE_DAYS);
+		} catch (err) {
+			console.error(`Unable to set max room age: ${err}`);
+		}
+		const now = Date.now();
 		const rooms = client.getRooms()
 			.filter((room) => {
 				// when user is the only current member: ignore
@@ -122,7 +130,22 @@ function App({ client }: AppProps): ReactNode {
 					return false;
 				}
 				return true;
+			})
+			.filter((room) => {
+				// filter by rooms age
+				if (maxRoomAgeInDays === -1) {
+					return true;
+				}
+				const createEvent = room.currentState.getStateEvents('m.room.create', '');
+				if (createEvent === null) {
+					console.error('Unable to get room creation date');
+					return true;
+				}
+				const diffInDays = getDifferenceInDays(now, createEvent.getTs());
+				return diffInDays <= maxRoomAgeInDays;
 			});
+
+		// get rooms the user is a moderator of
 		const moderatorRooms = await determineModeratedRooms(rooms, userId);
 		setModeratorRooms(moderatorRooms);
 
