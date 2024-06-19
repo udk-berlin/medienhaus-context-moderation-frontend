@@ -28,7 +28,11 @@ jobs:
         with:
           ref: ${{ github.event.inputs.ref }}
 
-      - run: printf "VITE_MATRIX_SERVER_URL=%s\n" "$vite_matrix_server_url" > .env
+      - run: |
+          cat > .env << EOF
+          VITE_MATRIX_SERVER_URL=$vite_matrix_server_url
+          VITE_MAX_ROOM_AGE_DAYS=$vite_max_room_age_days
+          EOF
 
       - name: Use Node.js 20.x
         uses: actions/setup-node@v4
