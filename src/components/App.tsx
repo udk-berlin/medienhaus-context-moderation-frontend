@@ -270,7 +270,7 @@ function App({ client }: AppProps): ReactNode {
 
 	return <Fragment>
 		<header>
-			<a href="/"><h1>{import.meta.env.VITE_UMBRELLA_PROJECT_TITLE}: {import.meta.env.VITE_PROJECT_TITLE}</h1></a>
+			<a href="/"><h1>{import.meta.env.VITE_APP_NAME}</h1></a>
 		</header>
 		<nav>
 			{(status !== 'logged-out') && <div>
