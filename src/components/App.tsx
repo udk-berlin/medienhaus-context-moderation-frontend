@@ -116,7 +116,7 @@ function App({ client }: AppProps): ReactNode {
 		// filter rooms
 		let maxRoomAgeInDays = -1;
 		try {
-			maxRoomAgeInDays = parseInt(import.meta.env.MAX_ROOM_AGE_DAYS);
+			maxRoomAgeInDays = parseInt(import.meta.env.VITE_MAX_ROOM_AGE_DAYS);
 		} catch (err) {
 			console.error(`Unable to set max room age: ${err}`);
 		}
