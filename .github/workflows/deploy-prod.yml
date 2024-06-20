@@ -21,7 +21,7 @@ jobs:
       ssh_host: 'rundgang.udk-berlin.de'
       ssh_key: ${{ secrets.SSH_RUNDGANG_UDK_BERLIN_DE }}
       matrix_base_url: ${{ secrets.MATRIX_BASE_URL }}
-      max_room_age_days: '-1'
+      max_room_age_days: '50'
       # @NOTE: the slash character needs to be escaped,
       # else the sed command below fails, unfortunately
       vite_app_name: 'udk\/rundgang — Context Moderation'
