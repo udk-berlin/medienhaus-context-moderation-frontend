@@ -1,5 +1,3 @@
-export const projectTitle = 'Moderator Quick Actions';
-
 export const UNKNOWN = 'UNKNOWN';
 
 // localStorage keys

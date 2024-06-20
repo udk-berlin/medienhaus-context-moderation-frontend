@@ -9,7 +9,7 @@ import LanguageSelector from './LanguageSelector';
 
 import { determineModeratedRooms, getChildEvents, getKnockEvents } from '../utils/matrix';
 import { AppStatus, ChildEvent, ChildrenByRoom, KnockEvent, KnocksByRoom, User } from '../types';
-import { projectTitle, lsAccessToken, lsUserId } from '../constants';
+import { lsAccessToken, lsUserId } from '../constants';
 import { getDifferenceInDays } from '../utils/date';
 
 
@@ -270,7 +270,7 @@ function App({ client }: AppProps): ReactNode {
 
 	return <Fragment>
 		<header>
-			<a href="/"><h1>udk/cms: {projectTitle}</h1></a>
+			<a href="/"><h1>{import.meta.env.VITE_UMBRELLA_PROJECT_TITLE}: {import.meta.env.VITE_PROJECT_TITLE}</h1></a>
 		</header>
 		<nav>
 			{(status !== 'logged-out') && <div>
