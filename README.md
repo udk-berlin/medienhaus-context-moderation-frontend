@@ -5,7 +5,7 @@ Medienhaus CMS email notification system frontend.
 
 ## Configuration
 
-Rename `.env-example` to `.env` and edit es needed.
+Rename `.env.example` to `.env` and edit es needed.
 
 
 ## Install
