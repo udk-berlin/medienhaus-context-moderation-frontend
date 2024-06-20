@@ -10,7 +10,7 @@ on:
       ref:
         description: The branch, tag or SHA to checkout
         required: true
-        default: 'main'
+        default: 'rundgang-2024'
 
 jobs:
   deploy_prod:
@@ -21,13 +21,24 @@ jobs:
       ssh_host: 'rundgang.udk-berlin.de'
       ssh_key: ${{ secrets.SSH_RUNDGANG_UDK_BERLIN_DE }}
       matrix_base_url: ${{ secrets.MATRIX_BASE_URL }}
+      max_room_age_days: '-1'
+      # @NOTE: the slash character needs to be escaped,
+      # else the sed command below fails, unfortunately
+      vite_app_name: 'udk\/rundgang — Context Moderation'
+      vite_html_title: 'udk\/rundgang — Context Moderation'
 
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.ref }}
 
-      - run: sed -e "s/^\(MATRIX_BASE_URL=\).*$/\1${matrix_base_url}/g" .env.example > .env
+      - run: |
+          sed \
+            -e "s/^\(MATRIX_BASE_URL=\).*$/\1${matrix_base_url}/g" \
+            -e "s/^\(MAX_ROOM_AGE_DAYS=\).*$/\1${max_room_age_days}/g" \
+            -e "s/^\(VITE_APP_NAME=\).*$/\1${vite_app_name}/g" \
+            -e "s/^\(VITE_HTML_TITLE=\).*$/\1${vite_html_title}/g" \
+            .env.example > .env
 
       - name: Use Node.js 20.x
         uses: actions/setup-node@v4
