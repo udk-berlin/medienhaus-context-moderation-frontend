@@ -1,6 +1,18 @@
-## Description
+<img src="./public/favicon.svg" width="70" />
 
-Medienhaus CMS email notification system frontend.
+### medienhaus/
+
+Customizable, modular, free and open-source environment for decentralized, distributed communication and collaboration without third-party dependencies.
+
+[Website](https://medienhaus.dev/) — [Fediverse](https://chaos.social/@medienhaus)
+
+<br>
+
+# medienhaus-context-moderation-frontend
+
+A simple web application for matrix space/room moderators to accept or deny knock requests.
+
+This frontend was developed in addition to an [email notification backend](https://github.com/medienhaus/medienhaus-context-moderation-backend).
 
 
 ## Configuration
