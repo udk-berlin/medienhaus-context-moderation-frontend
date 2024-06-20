@@ -4,7 +4,6 @@ export const resource: Resource = {
 	de: {
 		translation: {
 			'HELLO': 'Hallo',
-			'WELCOME_MSG': `Willkommen zu den ${import.meta.env.VITE_PROJECT_TITLE} für ${import.meta.env.VITE_UMBRELLA_PROJECT_TITLE}!`,
 			'MSG_NOT_A_MODERATOR': 'Du moderierst keine Spaces / Räume.',
 			'SPACES_YOU_ARE_MOD_OF': 'Spaces / Räume, in denen du Moderator bist',
 			'CONNECTED_ROOMS': 'Hinzugefügte Räume',
@@ -25,7 +24,6 @@ export const resource: Resource = {
 	en: {
 		translation: {
 			'HELLO': 'Hello',
-			'WELCOME_MSG': `Welcome to the ${import.meta.env.VITE_UMBRELLA_PROJECT_TITLE} ${import.meta.env.VITE_PROJECT_TITLE}!`,
 			'MSG_NOT_A_MODERATOR': 'You are not moderating any Spaces / Rooms.',
 			'SPACES_YOU_ARE_MOD_OF': 'Spaces / Rooms you are a moderator of',
 			'CONNECTED_ROOMS': 'Connected rooms',

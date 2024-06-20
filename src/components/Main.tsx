@@ -156,7 +156,6 @@ function Main({
 	return <Fragment>
 		<section className="landing">
 			<p>{t('HELLO')} <strong>{user.displayName}</strong>.</p>
-			{/* <h2>{t('WELCOME_MSG')}</h2> */}
 			<br />
 			{t('SPACES_YOU_ARE_MOD_OF')}:
 		</section>
