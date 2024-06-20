@@ -4,10 +4,18 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
+	<link rel="icon" type="image/svg+xml" href="/favicon.svg" sizes="any">
+    <!-- <title></title> -->
   </head>
   <body>
-    <div id="root"></div>
+    <div id="app"></div>
+	<script>
+		// fix for "global is not defined"
+		// https://github.com/matrix-org/matrix-js-sdk/issues/2168#issuecomment-1121668283
+		if (global === undefined) {
+			var global = window;
+		}
+	</script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
