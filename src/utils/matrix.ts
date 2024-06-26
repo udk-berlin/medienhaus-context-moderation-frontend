@@ -44,7 +44,10 @@ export async function determineModeratedRooms(
 				console.error('Unable to determine user power level in room: ' + room.name);
 				return;
 			}
-			if (userPowerLevel >= moderatorLevel && currentState?.events?.get('dev.medienhaus.meta')?.get('')?.event?.content?.type === 'context') {
+
+			const metaEvents = currentState.getStateEvents('dev.medienhaus.meta', '');
+			const isContext = metaEvents?.getContent().type === 'context';
+			if (isContext && userPowerLevel >= moderatorLevel) {
 				moderatorRooms.push(room);
 			}
 		}
